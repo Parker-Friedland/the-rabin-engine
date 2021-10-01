@@ -316,6 +316,9 @@
     <ClInclude Include="Source\Framework\Agent\EnemyAgent.h">
       <Filter>Source\Framework\Agent</Filter>
     </ClInclude>
+    <ClInclude Include="Info.h">
+      <Filter>Source\Student\Project_1</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Framework\Main.cpp">

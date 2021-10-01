@@ -181,6 +181,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Info.h" />
     <ClInclude Include="Source\Framework\Agent\Agent.h" />
     <ClInclude Include="Source\Framework\Agent\AgentOrganizer.h" />
     <ClInclude Include="Source\Framework\Agent\BehaviorAgent.h" />
