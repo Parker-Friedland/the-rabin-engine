@@ -3,7 +3,7 @@
 #include <vector>
 #include <random>
 
-#define BOARD_SIZE 8;
+static constexpr int BOARD_SIZE = 8;
 
 struct Info
 {
@@ -39,22 +39,25 @@ struct Info
 
 	void PlacePiece(piece p)
 	{
-		switch (p)
+		std::pair<int, int> coordinates;
+
+		do
 		{
-		case Info::knight1:
-		case Info::knight2:
-			do
-			{ }
-			while(!TryPlacingPiece(p, std::pair<int, int>(std::rand() % BOARD_SIZE, std::rand() % BOARD_SIZE)))
-			break;
-		case Info::bishop1:
-			do
+			coordinates.first = std::rand() % BOARD_SIZE;
+
+			switch (p)
 			{
-			} while (!TryPlacingPiece(p, std::pair<int, int>(std::rand() % (BOARD_SIZE/2), std::rand() % (BOARD_SIZE/2))))
-				break;
-		case Info::bishop2:
-			break;
-		}
+			case Info::knight1:
+			case Info::knight2:
+				coordinates.second = std::rand() % BOARD_SIZE;
+			case Info::bishop1:
+				coordinates.second = 2 * (std::rand() % (BOARD_SIZE/2))
+					+ (coordinates.first % 2) ? 0 : 1;
+			case Info::bishop2:
+				coordinates.second = 2 * (std::rand() % (BOARD_SIZE / 2))
+					+ (coordinates.first % 2) ? 1 : 0;
+			}
+		} while (!TryPlacingPiece(p, coordinates));
 	}
 
 	bool TryPlacingPiece(piece p, std::pair<int, int> coordinates)
@@ -68,11 +71,6 @@ struct Info
 		piecePrevPos[p] = coordinates;
 		return true;
 	}
-
-	/*bool PieceOnBoard(piece p)
-	{
-		return piecePrevPos[p].first >= 0;
-	}*/
 
 	void GenorateMoves()
 	{
@@ -91,21 +89,10 @@ struct Info
 
 	char board[8][8];
 
-	std::vector<std::pair<int, int>> knightMoves;
-	std::vector<std::pair<int, int>> bishopsMoves;
+	std::vector<std::vector<std::pair<int, int>>> moves;
 
 	std::vector<std::pair<int, int>> piecePrevPos;
 	std::vector<std::pair<int, int>> pieceNextPos;
-
-	std::pair<int, int> knight1prev;
-	std::pair<int, int> knight1next;
-	std::pair<int, int> knight2prev;
-	std::pair<int, int> knight2next;
-
-	std::pair<int, int> bishop1prev;
-	std::pair<int, int> bishop1next;
-	std::pair<int, int> bishop2prev;
-	std::pair<int, int> bishop2next;
 
 	int knights;
 	int bishops;
