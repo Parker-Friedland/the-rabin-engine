@@ -16,11 +16,20 @@ struct Info
 		num
 	};
 
+	enum state
+	{
+		idle,
+		threatened,
+		dead,
+		num
+	};
+
 	enum turn
 	{
 		setup,
 		knights,
 		bishops,
+		num
 	};
 
 	enum phase
@@ -28,6 +37,7 @@ struct Info
 		start,
 		wait,
 		capture,
+		num
 	};
 
 	void ClearBoard()
@@ -64,11 +74,11 @@ struct Info
 	{
 		for (int i = 0; i < piece::num; ++i)
 		{
-			if (piecePrevPos[i] == coordinates)
+			if (prevPos[i] == coordinates)
 				return false;
 		}
 
-		piecePrevPos[p] = coordinates;
+		prevPos[p] = coordinates;
 		return true;
 	}
 
@@ -79,23 +89,25 @@ struct Info
 
 	bool KnightsLosing()
 	{
-		return bishops > knights;
+		return numBishops > numKnights;
 	}
 
 	bool BishopsLosing()
 	{
-		return knights > bishops;
+		return numKnights > numBishops;
 	}
 
 	char board[8][8];
 
 	std::vector<std::vector<std::pair<int, int>>> moves;
 
-	std::vector<std::pair<int, int>> piecePrevPos;
-	std::vector<std::pair<int, int>> pieceNextPos;
+	std::vector<std::pair<int, int>> prevPos;
+	std::vector<std::pair<int, int>> nextPos;
 
-	int knights;
-	int bishops;
+	std::vector<state> states;
+
+	int numKnights;
+	int numBishops;
 
 	bool currPieces[4];
 
