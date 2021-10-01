@@ -3,6 +3,10 @@
 #include <vector>
 #include <random>
 
+#include <pch.h>
+#include "Projects/ProjectOne.h"
+#include "Agent/CameraAgent.h"
+
 static constexpr int BOARD_SIZE = 8;
 
 struct Info
@@ -47,7 +51,24 @@ struct Info
 				board[i][j] = 0;
 	}
 
-	void PlacePiece(piece p)
+	void CreateAgents()
+	{
+		BehaviorAgent* agent;
+		
+		agent = agents->create_behavior_agent("Knight1", BehaviorTreeTypes::Example);
+		agent->set_position(GetTranslationVec(CreatePiece(piece::knight1)));
+
+		agent = agents->create_behavior_agent("Knight2", BehaviorTreeTypes::Example);
+		agent->set_position(GetTranslationVec(CreatePiece(piece::knight2)));
+
+		agent = agents->create_behavior_agent("Bishop1", BehaviorTreeTypes::Example);
+		agent->set_position(GetTranslationVec(CreatePiece(piece::bishop1)));
+
+		agent = agents->create_behavior_agent("Bishop2", BehaviorTreeTypes::Example);
+		agent->set_position(GetTranslationVec(CreatePiece(piece::bishop2)));
+	}
+
+	std::pair<int, int> CreatePiece(piece p)
 	{
 		std::pair<int, int> coordinates;
 
@@ -70,6 +91,11 @@ struct Info
 		} while (!TryPlacingPiece(p, coordinates));
 	}
 
+	Vec3 GetTranslationVec(std::pair<int, int> coordinates)
+	{
+		return Vec3(0, 0, 0);
+	}
+
 	bool TryPlacingPiece(piece p, std::pair<int, int> coordinates)
 	{
 		for (int i = 0; i < piece::num; ++i)
@@ -83,6 +109,11 @@ struct Info
 	}
 
 	void GenorateMoves()
+	{
+		for(int i = 0; i < piece)
+	}
+
+	void GenorateBoard()
 	{
 
 	}
@@ -110,6 +141,8 @@ struct Info
 	int numBishops;
 
 	bool currPieces[4];
+
+	piece pieceCreated;
 
 	turn turn;
 	phase phase;
