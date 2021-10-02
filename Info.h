@@ -187,14 +187,17 @@ struct Info
 	void ClearBoard()
 	{
 		for(int p = piece::first; p < piece::num; ++p)
-			for (int i = 0; i < 8; ++i)
-				for (int j = 0; j < 8; ++j)
+			for (int i = 0; i < BOARD_SIZE; ++i)
+				for (int j = 0; j < BOARD_SIZE; ++j)
 					board[p][i][j] = false;
 	}
 
 	bool InBounds(std::pair<int, int> coordinates)
 	{
-
+		return coordinates.first >= 0
+			&& coordinates.first < BOARD_SIZE
+			&& coordinates.second >= 0
+			&& coordinates.second < BOARD_SIZE;
 	}
 
 	bool KnightsLosing()
@@ -207,7 +210,7 @@ struct Info
 		return numKnights > numBishops;
 	}
 
-	bool board[piece::num][8][8];
+	bool board[piece::num][BOARD_SIZE][BOARD_SIZE];
 
 	std::vector<std::vector<std::pair<int, int>>> moves;
 
