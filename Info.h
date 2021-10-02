@@ -13,12 +13,32 @@ struct Info
 {
 	enum piece
 	{
+		first = 0,
 		knight1 = 0,
 		knight2,
 		bishop1,
 		bishop2,
-		num
+		num,
+
+		none = -1
 	};
+
+	piece GetPiece(int id)
+	{
+		switch (id)
+		{
+		case 0:
+			return piece::knight1;
+		case 1:
+			return piece::knight2;
+		case 2:
+			return piece::bishop1;
+		case 3:
+			return piece::bishop2;
+		default:
+			return piece::none;
+		}
+	}
 
 	enum state
 	{
@@ -43,13 +63,6 @@ struct Info
 		capture,
 		num
 	};
-
-	void ClearBoard()
-	{
-		for (int i = 0; i < 8; ++i)
-			for (int j = 0; j < 8; ++j)
-				board[i][j] = 0;
-	}
 
 	void CreateAgents()
 	{
@@ -110,10 +123,76 @@ struct Info
 
 	void GenorateMoves()
 	{
-		for(int i = 0; i < piece)
+		std::pair<int, int> coordinates;
+
+		for (int p = piece::knight1; p <= piece::knight2; ++p)
+		{
+			if (states[p] != state::dead)
+			{
+				for (int x = -1; x <= 1; x += 2)
+				{
+					for (int y = -1; y <= 1; y += 2)
+					{
+						coordinates = nextPos[p];
+						coordinates.first += 2 * x;
+						coordinates.second += y;
+						if (InBounds(coordinates))
+							moves[p].push_back(coordinates);
+
+						coordinates = nextPos[p];
+						coordinates.first += x;
+						coordinates.second += 2 * y;
+						if (InBounds(coordinates))
+							moves[p].push_back(coordinates);
+					}
+				}
+			}
+		}
+
+		for (int p = piece::bishop1; p <= piece::bishop2; ++p)
+		{
+			if (states[p] != state::dead)
+			{
+				for (int i = 1; i < BOARD_SIZE; ++i)
+				{
+					for (int x = -1; x <= 1; x += 2)
+					{
+						for (int y = -1; y <= 1; y += 2)
+						{
+							coordinates = nextPos[p];
+							coordinates.first += i*x;
+							coordinates.second += i*y;
+							if (InBounds(coordinates))
+								moves[p].push_back(coordinates);
+						}
+					}
+				}
+			}
+		}
 	}
 
 	void GenorateBoard()
+	{
+		ClearBoard();
+
+		for (int p = piece::first; p < piece::num; ++p)
+		{
+			for (int i = 0; i < moves[p].size(); ++i)
+			{
+				board[p][moves[p][i].first][moves[p][i].second] = true;
+			}
+		}
+	}
+
+	void ClearBoard()
+	{
+		for(int p = piece::first; p < piece::num; ++p)
+			for (int i = 0; i < 8; ++i)
+				for (int j = 0; j < 8; ++j)
+					board[p][i][j] = false;
+	}
+
+	bool InBounds(std::pair<int, int> coordinates)
 	{
 
 	}
@@ -128,7 +207,7 @@ struct Info
 		return numKnights > numBishops;
 	}
 
-	char board[8][8];
+	bool board[piece::num][8][8];
 
 	std::vector<std::vector<std::pair<int, int>>> moves;
 
@@ -139,10 +218,6 @@ struct Info
 
 	int numKnights;
 	int numBishops;
-
-	bool currPieces[4];
-
-	piece pieceCreated;
 
 	turn turn;
 	phase phase;
