@@ -8,6 +8,7 @@
 #include "Agent/CameraAgent.h"
 
 static constexpr int BOARD_SIZE = 8;
+static constexpr int MAX_PROB = 100;
 
 struct Info
 {
@@ -121,6 +122,13 @@ struct Info
 		return true;
 	}
 
+	void InitializeTurn()
+	{
+		GenorateMoves();
+		GenorateBoard();
+		SetDodgeFlag();
+	}
+
 	void GenorateMoves()
 	{
 		std::pair<int, int> coordinates;
@@ -200,6 +208,17 @@ struct Info
 			&& coordinates.second < BOARD_SIZE;
 	}
 
+	bool IsLoosing()
+	{
+		switch (turn)
+		{
+		case Info::knights:
+			return KnightsLosing();
+		case Info::bishops:
+			return BishopsLosing();
+		}
+	}
+
 	bool KnightsLosing()
 	{
 		return numBishops > numKnights;
@@ -208,6 +227,11 @@ struct Info
 	bool BishopsLosing()
 	{
 		return numKnights > numBishops;
+	}
+
+	bool SetDodgeFlag()
+	{
+		allowDodges = dodgeProb <= std::rand() % MAX_PROB;
 	}
 
 	bool board[piece::num][BOARD_SIZE][BOARD_SIZE];
@@ -224,4 +248,7 @@ struct Info
 
 	turn turn;
 	phase phase;
+
+	int dodgeProb = MAX_PROB;
+	bool allowDodges;
 };
