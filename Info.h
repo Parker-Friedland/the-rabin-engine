@@ -12,57 +12,57 @@ static constexpr int MAX_PROB = 100;
 
 struct Info
 {
-	enum piece
+	enum Piece
 	{
-		first = 0,
-		knight1 = 0,
-		knight2,
-		bishop1,
-		bishop2,
-		num,
+		First = 0,
+		Knight1 = 0,
+		Knight2,
+		Bishop1,
+		Bishop2,
+		Num,
 
-		none = -1
+		None = -1
 	};
 
-	piece GetPiece(int id)
+	Piece GetPiece(int id)
 	{
 		switch (id)
 		{
 		case 0:
-			return piece::knight1;
+			return Piece::Knight1;
 		case 1:
-			return piece::knight2;
+			return Piece::Knight2;
 		case 2:
-			return piece::bishop1;
+			return Piece::Bishop1;
 		case 3:
-			return piece::bishop2;
+			return Piece::Bishop2;
 		default:
-			return piece::none;
+			return Piece::None;
 		}
 	}
 
-	enum state
+	enum State
 	{
-		idle,
-		threatened,
-		dead,
-		num
+		Idle,
+		Threatened,
+		Captured,
+		Num
 	};
 
-	enum turn
+	enum Turn
 	{
 		setup,
 		knights,
 		bishops,
-		num
+		Num
 	};
 
-	enum phase
+	enum Phase
 	{
-		start,
-		wait,
-		capture,
-		num
+		Start,
+		Wait,
+		Capture,
+		Num
 	};
 
 	void CreateAgents()
@@ -70,19 +70,19 @@ struct Info
 		BehaviorAgent* agent;
 		
 		agent = agents->create_behavior_agent("Knight1", BehaviorTreeTypes::Example);
-		agent->set_position(GetTranslationVec(CreatePiece(piece::knight1)));
+		agent->set_position(GetTranslationVec(CreatePiece(Piece::Knight1)));
 
 		agent = agents->create_behavior_agent("Knight2", BehaviorTreeTypes::Example);
-		agent->set_position(GetTranslationVec(CreatePiece(piece::knight2)));
+		agent->set_position(GetTranslationVec(CreatePiece(Piece::Knight2)));
 
 		agent = agents->create_behavior_agent("Bishop1", BehaviorTreeTypes::Example);
-		agent->set_position(GetTranslationVec(CreatePiece(piece::bishop1)));
+		agent->set_position(GetTranslationVec(CreatePiece(Piece::Bishop1)));
 
 		agent = agents->create_behavior_agent("Bishop2", BehaviorTreeTypes::Example);
-		agent->set_position(GetTranslationVec(CreatePiece(piece::bishop2)));
+		agent->set_position(GetTranslationVec(CreatePiece(Piece::Bishop2)));
 	}
 
-	std::pair<int, int> CreatePiece(piece p)
+	std::pair<int, int> CreatePiece(Piece p)
 	{
 		std::pair<int, int> coordinates;
 
@@ -92,13 +92,13 @@ struct Info
 
 			switch (p)
 			{
-			case Info::knight1:
-			case Info::knight2:
+			case Info::Knight1:
+			case Info::Knight2:
 				coordinates.second = std::rand() % BOARD_SIZE;
-			case Info::bishop1:
+			case Info::Bishop1:
 				coordinates.second = 2 * (std::rand() % (BOARD_SIZE/2))
 					+ (coordinates.first % 2) ? 0 : 1;
-			case Info::bishop2:
+			case Info::Bishop2:
 				coordinates.second = 2 * (std::rand() % (BOARD_SIZE / 2))
 					+ (coordinates.first % 2) ? 1 : 0;
 			}
@@ -110,9 +110,9 @@ struct Info
 		return Vec3(0, 0, 0);
 	}
 
-	bool TryPlacingPiece(piece p, std::pair<int, int> coordinates)
+	bool TryPlacingPiece(Piece p, std::pair<int, int> coordinates)
 	{
-		for (int i = 0; i < piece::num; ++i)
+		for (int i = 0; i < Piece::Num; ++i)
 		{
 			if (prevPos[i] == coordinates)
 				return false;
@@ -122,20 +122,21 @@ struct Info
 		return true;
 	}
 
-	void InitializeTurn()
+	void InitTurn()
 	{
 		GenorateMoves();
 		GenorateBoard();
-		SetDodgeFlag();
+		InitTargets();
+		UpdateDodgeFlag();
 	}
 
 	void GenorateMoves()
 	{
 		std::pair<int, int> coordinates;
 
-		for (int p = piece::knight1; p <= piece::knight2; ++p)
+		for (int p = Piece::Knight1; p <= Piece::Knight2; ++p)
 		{
-			if (states[p] != state::dead)
+			if (states[p] != State::Captured)
 			{
 				for (int x = -1; x <= 1; x += 2)
 				{
@@ -157,9 +158,9 @@ struct Info
 			}
 		}
 
-		for (int p = piece::bishop1; p <= piece::bishop2; ++p)
+		for (int p = Piece::Bishop1; p <= Piece::Bishop2; ++p)
 		{
-			if (states[p] != state::dead)
+			if (states[p] != State::Captured)
 			{
 				for (int i = 1; i < BOARD_SIZE; ++i)
 				{
@@ -183,7 +184,7 @@ struct Info
 	{
 		ClearBoard();
 
-		for (int p = piece::first; p < piece::num; ++p)
+		for (int p = Piece::First; p < Piece::Num; ++p)
 		{
 			for (int i = 0; i < moves[p].size(); ++i)
 			{
@@ -194,7 +195,7 @@ struct Info
 
 	void ClearBoard()
 	{
-		for(int p = piece::first; p < piece::num; ++p)
+		for(int p = Piece::First; p < Piece::Num; ++p)
 			for (int i = 0; i < BOARD_SIZE; ++i)
 				for (int j = 0; j < BOARD_SIZE; ++j)
 					board[p][i][j] = false;
@@ -229,26 +230,71 @@ struct Info
 		return numKnights > numBishops;
 	}
 
-	bool SetDodgeFlag()
+	void InitTargets()
 	{
-		allowDodges = dodgeProb <= std::rand() % MAX_PROB;
+		capture = Piece::None;
+		fork1 = Piece::None;
+		fork2 = Piece::None;
 	}
 
-	bool board[piece::num][BOARD_SIZE][BOARD_SIZE];
+	bool UpdateDodgeFlag()
+	{
+		allowDodges = dodgeProb < std::rand() % MAX_PROB;
+		if (allowDodges)
+			--dodgeProb;
+	}
+
+	void UpdateTurn()
+	{
+		switch (turn)
+		{
+		case Turn::setup:
+			turn = Turn::knights;
+			break;
+		case Turn::knights:
+			turn = Turn::bishops;
+			break;
+		case Turn::bishops:
+			turn = Turn::setup;
+			break;
+		}
+	}
+
+	void UpdatePhase()
+	{
+		switch (phase)
+		{
+		case Phase::Start:
+			phase = Phase::Wait;
+			break;
+		case Phase::Wait:
+			phase = Phase::Capture;
+			break;
+		case Phase::Capture:
+			phase = Phase::Start;
+			break;
+		}
+	}
+
+	bool board[Piece::Num][BOARD_SIZE][BOARD_SIZE];
 
 	std::vector<std::vector<std::pair<int, int>>> moves;
 
 	std::vector<std::pair<int, int>> prevPos;
 	std::vector<std::pair<int, int>> nextPos;
 
-	std::vector<state> states;
+	std::vector<State> states;
 
 	int numKnights;
 	int numBishops;
 
-	turn turn;
-	phase phase;
+	Turn turn;
+	Phase phase;
 
-	int dodgeProb = MAX_PROB;
+	Piece capture;
+	Piece fork1;
+	Piece fork2;
+
+	int dodgeProb = MAX_PROB - 1;
 	bool allowDodges;
 };
