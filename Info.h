@@ -51,9 +51,9 @@ struct Info
 
 	enum Turn
 	{
-		setup,
-		knights,
-		bishops,
+		Setup,
+		Knights,
+		Bishops,
 		Num
 	};
 
@@ -69,16 +69,16 @@ struct Info
 	{
 		BehaviorAgent* agent;
 		
-		agent = agents->create_behavior_agent("Knight1", BehaviorTreeTypes::Example);
+		agent = agents->create_behavior_agent("K1", BehaviorTreeTypes::Example);
 		agent->set_position(GetTranslationVec(CreatePiece(Piece::Knight1)));
 
-		agent = agents->create_behavior_agent("Knight2", BehaviorTreeTypes::Example);
+		agent = agents->create_behavior_agent("K2", BehaviorTreeTypes::Example);
 		agent->set_position(GetTranslationVec(CreatePiece(Piece::Knight2)));
 
-		agent = agents->create_behavior_agent("Bishop1", BehaviorTreeTypes::Example);
+		agent = agents->create_behavior_agent("B1", BehaviorTreeTypes::Example);
 		agent->set_position(GetTranslationVec(CreatePiece(Piece::Bishop1)));
 
-		agent = agents->create_behavior_agent("Bishop2", BehaviorTreeTypes::Example);
+		agent = agents->create_behavior_agent("B2", BehaviorTreeTypes::Example);
 		agent->set_position(GetTranslationVec(CreatePiece(Piece::Bishop2)));
 	}
 
@@ -128,6 +128,8 @@ struct Info
 		GenorateBoard();
 		InitTargets();
 		UpdateDodgeFlag();
+		turn = Turn::Setup;
+		phase = Phase::Start;
 	}
 
 	void GenorateMoves()
@@ -213,9 +215,9 @@ struct Info
 	{
 		switch (turn)
 		{
-		case Info::knights:
+		case Info::Knights:
 			return KnightsLosing();
-		case Info::bishops:
+		case Info::Bishops:
 			return BishopsLosing();
 		}
 	}
@@ -248,16 +250,18 @@ struct Info
 	{
 		switch (turn)
 		{
-		case Turn::setup:
-			turn = Turn::knights;
+		case Turn::Setup:
+			turn = Turn::Knights;
 			break;
-		case Turn::knights:
-			turn = Turn::bishops;
+		case Turn::Knights:
+			turn = Turn::Bishops;
 			break;
-		case Turn::bishops:
-			turn = Turn::setup;
+		case Turn::Bishops:
+			turn = Turn::Knights;
 			break;
 		}
+
+		phase = Phase::Start;
 	}
 
 	void UpdatePhase()
