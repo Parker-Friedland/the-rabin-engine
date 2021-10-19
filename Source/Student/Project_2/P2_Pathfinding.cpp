@@ -8,6 +8,47 @@
 #include <numbers>
 #include <algorithm>
 
+struct Node
+{
+    Node(GridPos pos, Heuristic h, GridPos goal) :
+        _pos(pos), _parent(nullptr), _g(0), _f(AStarPather::Distance(h, pos, goal)) {}
+
+    Node(GridPos pos, Node* parent, float g, float f) :
+        _pos(pos), _parent(parent), _g(g), _f(f) {}
+
+    Node(GridPos pos, Node* parent, Heuristic h, GridPos goal, bool diag) :
+        _pos(pos), _parent(parent), _g(parent->_g + diag ? sqrtf(2) : 1), _f(_g + AStarPather::Distance(h, pos, goal)) {}
+
+    bool IsOpen(std::unordered_map<GridPos, Node> m)
+    {
+        _f == m.find(_pos)->second._f;
+    }
+
+    GridPos _pos;
+    const Node* _parent;
+    float _g; // given cost
+    float _f; // given cost + heuristic cost
+
+    bool operator<(const Node& rhs) const
+    {
+        return _f < rhs._f;
+    }
+
+    bool operator==(const Node& rhs) const
+    {
+        return _pos == rhs._pos;
+    }
+
+    bool operator!=(const Node& rhs) const
+    {
+        return _pos != rhs._pos;
+    }
+};
+
+typedef std::priority_queue<Node, std::vector<Node>, std::less<Node>> QUEUE;
+typedef std::unordered_map<GridPos, Node> MAP;
+typedef MAP::iterator IT;
+
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
 {
