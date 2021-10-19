@@ -29,6 +29,11 @@ public:
     QUEUE _openList;
     MAP _allNodes;
 
+    static float Distance(Heuristic h, GridPos start, GridPos end)
+    {
+        return Distance(h, end.col - start.col, end.row - start.row);
+    }
+
     static float Distance(Heuristic h, int x, int y)
     {
         switch (h)
