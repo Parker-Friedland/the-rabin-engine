@@ -8,43 +8,6 @@
 #include <numbers>
 #include <algorithm>
 
-struct Node
-{
-    Node(GridPos pos, Heuristic h, GridPos goal) : 
-        _pos(pos), _parent(nullptr), _g(0), _f(AStarPather::Distance(h, pos, goal)) {}
-
-    Node(GridPos pos, Node* parent, Heuristic h, GridPos goal) : 
-        _pos(pos), _parent(nullptr), _g(parent->_g + 1), _f(_g + AStarPather::Distance(h, pos, goal)) {}
-
-    bool IsOpen(MAP m)
-    {
-        _f == m.find(_pos)->second._f;
-    }
-
-    GridPos _pos;
-    Node* _parent;
-    float _g; // given cost
-    float _f; // given cost + heuristic cost
-
-    bool operator<(const Node& rhs) const
-    {
-        return _f < rhs._f;
-    }
-
-    bool operator==(const Node& rhs) const
-    {
-        return _pos == rhs._pos;
-    }
-
-    bool operator!=(const Node& rhs) const
-    {
-        return _pos != rhs._pos;
-    }
-};
-
-typedef std::priority_queue<Node, std::vector<Node>, std::less<Node>> QUEUE;
-typedef std::unordered_map<GridPos, Node> MAP;
-
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
 {
@@ -145,29 +108,29 @@ PathResult AStarPather::compute_path(PathRequest &request)
             if (curr._pos == goal)
                 return PathResult::COMPLETE;
 
+            float g, f;
             GridPos next = curr._pos;
 
             next.col += 1;
             bool right = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
             if (right)
-                openList.emplace(next, curr, h, goal);
+                AddAdj(curr, next, goal, h);
 
             next.col -= 2;
             bool left = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
             if (left)
-                openList.emplace(next, curr, h, goal);
+                AddAdj(curr, next, goal, h);
             next.col += 1;
 
             next.row += 1;
             bool up = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
             if (up)
-                openList.emplace(next, curr, h, goal);
+                AddAdj(curr, next, goal, h);
 
             next.row -= 2;
             bool down = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
             if (down)
-                openList.emplace(next, curr, h, goal);
-            next.row += 1;
+                AddAdj(curr, next, goal, h);
 
             if (right && up)
             {
@@ -175,7 +138,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
                 ++next.col;
 
                 if(!terrain->is_wall(next))
-                    openList.emplace(next, curr, h, goal);
+                    AddDiag(curr, next, goal, h);
 
                 --next.row;
                 --next.col;
@@ -187,10 +150,31 @@ PathResult AStarPather::compute_path(PathRequest &request)
                 --next.col;
 
                 if (!terrain->is_wall(next))
-                    openList.emplace(next, curr, h, goal);
+                    AddDiag(curr, next, goal, h);
 
                 --next.row;
                 ++next.col;
+            }
+
+            if (left && down)
+            {
+                --next.row;
+                --next.col;
+
+                if (!terrain->is_wall(next))
+                    AddDiag(curr, next, goal, h);
+
+                ++next.row;
+                ++next.col;
+            }
+
+            if (right && down)
+            {
+                --next.row;
+                ++next.col;
+
+                if (!terrain->is_wall(next))
+                    AddDiag(curr, next, goal, h);
             }
         }
 
