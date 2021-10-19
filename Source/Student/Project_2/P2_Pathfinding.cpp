@@ -6,19 +6,34 @@
 
 #include <cmath>
 #include <numbers>
+#include <algorithm>
 
 struct Node
 {
-    Node(GridPos pos, Node* parent, float g, float f) : _pos(pos), _parent(parent), _g(g), _f(f) {}
-
-    Node(GridPos pos, Node* parent, float g, Heuristic h, GridPos end) : _pos(pos), _parent(parent), _g(g)
+    Node(GridPos pos, Node* parent, float g, float f) : _pos(pos), _parent(parent), _g(g), _f(f) 
     {
-        SetF(h, end);
+
     }
 
-    void SetF(Heuristic h, GridPos end)
+    Node(GridPos pos, Node* parent, Heuristic h, GridPos goal, float g) : _pos(pos), _parent(parent), _g(g)
     {
-        _f = _g + AStarPather::Distance(h, end.col - _pos.col, end.row - _pos.row);
+        UpdateCost(h, goal);
+    }
+
+    void UpdateCost(Heuristic h, GridPos goal)
+    {
+        _f = _g + AStarPather::Distance(h, goal.col - _pos.col, goal.row - _pos.row);
+    }
+
+    void UpdateCost(Heuristic h, GridPos goal, Node* parent)
+    {
+        _g = parent->_g + 1;
+        UpdateCost(h, goal);
+    }
+
+    bool IsOpen(MAP m)
+    {
+        _f == m.find(_pos)->second._f;
     }
 
     GridPos _pos;
@@ -30,9 +45,41 @@ struct Node
     {
         return _f < rhs._f;
     }
+
+    bool operator==(const Node& rhs) const
+    {
+        return _pos == rhs._pos;
+    }
+
+    bool operator!=(const Node& rhs) const
+    {
+        return _pos != rhs._pos;
+    }
 };
 
 typedef std::priority_queue<Node, std::vector<Node>, std::less<Node>> QUEUE;
+typedef std::unordered_map<GridPos, Node> MAP;
+
+struct NodeRef
+{
+    NodeRef(MAP m, GridPos pos, Node* parent, float g, float f) : _pos(pos)
+    {
+        m.emplace(pos, pos, parent, g, f);
+    }
+
+    NodeRef(MAP m, GridPos pos, Node* parent, Heuristic h, GridPos goal, float g) : _pos(pos)
+    {
+        m.emplace(pos, pos, parent, h, goal, g);
+    }
+
+    void UpdateCost(MAP m, Heuristic h, GridPos goal)
+    {
+        MAP::iterator i = m.find(_pos);
+    }
+
+    GridPos _pos;
+};
+
 
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
@@ -115,25 +162,33 @@ PathResult AStarPather::compute_path(PathRequest &request)
     // WRITE YOUR CODE HERE
 
     GridPos start = terrain->get_grid_position(request.start);
-    GridPos end = terrain->get_grid_position(request.start);
+    GridPos goal = terrain->get_grid_position(request.goal);
 
     QUEUE openList = QUEUE(std::less<Node>(), std::vector<Node>());
     QUEUE closedList = QUEUE(std::less<Node>(), std::vector<Node>());
 
+    
+
     Heuristic h = request.settings.heuristic;
 
-    openList.emplace(start, nullptr, 0, h, end);
+    openList.emplace(start, nullptr, h, goal, 0);
 
     while (!openList.empty())
     {
+        Node next = openList.top();
+        openList.pop();
 
+        if (next._pos == goal)
+            return PathResult::COMPLETE;
+
+        
     }
 
     //open
     
     // Just sample code, safe to delete
-    GridPos start = terrain->get_grid_position(request.start);
-    GridPos goal = terrain->get_grid_position(request.goal);
+    //GridPos start = terrain->get_grid_position(request.start);
+    //GridPos goal = terrain->get_grid_position(request.goal);
     terrain->set_color(start, Colors::Orange);
     terrain->set_color(goal, Colors::Orange);
     request.path.push_back(request.start);

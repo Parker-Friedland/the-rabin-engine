@@ -1,6 +1,9 @@
 #pragma once
 #include "Misc/PathfindingDetails.hpp"
 
+typedef std::priority_queue<Node, std::vector<Node>, std::less<Node>> QUEUE;
+typedef std::unordered_map<GridPos, Node> MAP;
+
 class AStarPather
 {
 public:
@@ -23,6 +26,9 @@ public:
         makes sense to you.
     */
 
+    QUEUE _openList;
+    MAP _allNodes;
+
     static float Distance(Heuristic h, int x, int y)
     {
         switch (h)
@@ -42,17 +48,17 @@ public:
 
     static float Euclidean(int x, int y)
     {
-        return std::sqrtf(x * x + y * y);
+        return std::sqrtf(static_cast<float>(x * x) + static_cast<float>(y * y));
     }
 
     static float Manhattan(int x, int y)
     {
-        return std::abs(x) + std::abs(y);
+        return static_cast<float>(std::abs(x) + std::abs(y));
     }
 
     static float Chebyshev(int x, int y)
     {
-        return std::max(std::abs(x), std::abs(y));
+        return static_cast<float>(std::max(std::abs(x), std::abs(y)));
     }
 
     static float Octile(int x, int y)
