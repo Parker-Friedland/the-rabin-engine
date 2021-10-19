@@ -23,4 +23,40 @@ public:
         makes sense to you.
     */
 
+    static float Distance(Heuristic h, int x, int y)
+    {
+        switch (h)
+        {
+        case Heuristic::OCTILE:
+            return Octile(x, y);
+        case Heuristic::CHEBYSHEV:
+            return Chebyshev(x, y);
+        case Heuristic::MANHATTAN:
+            return Manhattan(x, y);
+        case Heuristic::EUCLIDEAN:
+            return Euclidean(x, y);
+        default:
+            return 0;
+        }
+    }
+
+    static float Euclidean(int x, int y)
+    {
+        return std::sqrtf(x * x + y * y);
+    }
+
+    static float Manhattan(int x, int y)
+    {
+        return std::abs(x) + std::abs(y);
+    }
+
+    static float Chebyshev(int x, int y)
+    {
+        return std::max(std::abs(x), std::abs(y));
+    }
+
+    static float Octile(int x, int y)
+    {
+        return Manhattan(x, y) + (std::sqrtf(2) - 1) * Chebyshev(x, y);
+    }
 };

@@ -2,6 +2,38 @@
 #include "Projects/ProjectTwo.h"
 #include "P2_Pathfinding.h"
 
+#define _USE_MATH_DEFINES
+
+#include <cmath>
+#include <numbers>
+
+struct Node
+{
+    Node(GridPos pos, Node* parent, float g, float f) : _pos(pos), _parent(parent), _g(g), _f(f) {}
+
+    Node(GridPos pos, Node* parent, float g, Heuristic h, GridPos end) : _pos(pos), _parent(parent), _g(g)
+    {
+        SetF(h, end);
+    }
+
+    void SetF(Heuristic h, GridPos end)
+    {
+        _f = _g + AStarPather::Distance(h, end.col - _pos.col, end.row - _pos.row);
+    }
+
+    GridPos _pos;
+    Node* _parent;
+    float _g; // given cost
+    float _f; // given cost + heuristic cost
+
+    bool operator<(const Node& rhs) const
+    {
+        return _f < rhs._f;
+    }
+};
+
+typedef std::priority_queue<Node, std::vector<Node>, std::less<Node>> QUEUE;
+
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
 {
@@ -82,6 +114,22 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
     // WRITE YOUR CODE HERE
 
+    GridPos start = terrain->get_grid_position(request.start);
+    GridPos end = terrain->get_grid_position(request.start);
+
+    QUEUE openList = QUEUE(std::less<Node>(), std::vector<Node>());
+    QUEUE closedList = QUEUE(std::less<Node>(), std::vector<Node>());
+
+    Heuristic h = request.settings.heuristic;
+
+    openList.emplace(start, nullptr, 0, h, end);
+
+    while (!openList.empty())
+    {
+
+    }
+
+    //open
     
     // Just sample code, safe to delete
     GridPos start = terrain->get_grid_position(request.start);
@@ -91,4 +139,9 @@ PathResult AStarPather::compute_path(PathRequest &request)
     request.path.push_back(request.start);
     request.path.push_back(request.goal);
     return PathResult::COMPLETE;
+}
+
+float calculateH(Heuristic hType)
+{
+
 }
