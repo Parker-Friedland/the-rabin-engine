@@ -34,14 +34,16 @@ public:
 
     struct Node
     {
-        Node(GridPos pos, Heuristic h, GridPos goal) :
+        Node() : _f(0) {}
+
+        Node(const GridPos &pos, const Heuristic &h, const GridPos &goal) :
             _pos(pos), _parent(nullptr), _g(0), _f(AStarPather::Distance(h, pos, goal)) {}
 
-        Node(GridPos pos, Node* parent, float g, float f) :
-            _pos(pos), _parent(parent), _g(g), _f(f) {}
+        Node(const GridPos &pos, Node &parent, float g, float f) :
+            _pos(pos), _parent(&parent), _g(g), _f(f) {}
 
-        Node(GridPos pos, Node* parent, Heuristic h, GridPos goal, bool diag) :
-            _pos(pos), _parent(parent), _g(parent->_g + diag ? sqrtf(2) : 1), _f(_g + AStarPather::Distance(h, pos, goal)) {}
+        Node(const GridPos &pos, Node &parent, Heuristic h, const GridPos &goal, bool diag) :
+            _pos(pos), _parent(&parent), _g(parent._g + diag ? sqrtf(2) : 1), _f(_g + AStarPather::Distance(h, pos, goal)) {}
 
         struct Hash
         {
@@ -108,23 +110,21 @@ public:
     MAP _allNodes;
 
     template <bool diag>
-    void AddNeighboor(Node &curr, const GridPos& next, const GridPos& goal, const Heuristic& h)
+    void AddNeighboor(Node &curr, const GridPos& nextPos, const GridPos& goal, const Heuristic& h)
     {
-        float g = curr._g + diag?sqrtf(2):1;
-        float f = g + Distance(h, next, goal);
+        Node& next = _allNodes[nextPos];
+        next._pos = nextPos;
 
-        ITER i;
-        if ((i = _allNodes.find(next)) != _allNodes.end())
+        float g = curr._g + diag ? sqrtf(2) : 1;
+        float f = g + Distance(h, nextPos, goal);
+
+        if (f < next._f)
         {
-            if (f >= i->second._f)
-                return;
-
-            i->second._f = f;
-            i->second._g = g;
-            i->second._parent = &curr;
+            next._f = f;
+            next._g = g;
+            next._parent = &curr;
+            _openList.emplace(nextPos, curr, g, f);
         }
-        
-        _openList.emplace(next, &curr, g, f);
     }
 
     void AddAdj(Node& curr, const GridPos& next, const GridPos& goal, const Heuristic& h)

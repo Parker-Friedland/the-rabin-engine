@@ -119,32 +119,32 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
             next.col += 1;
             bool right = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            //if (right)
-                //AddAdj(curr, next, goal, h);
+            if (right)
+                AddAdj(curr, next, goal, h);
 
             next.col -= 2;
             bool left = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            //if (left)
-                //AddAdj(curr, next, goal, h);
+            if (left)
+                AddAdj(curr, next, goal, h);
             next.col += 1;
 
             next.row += 1;
             bool up = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            //if (up)
-                //AddAdj(curr, next, goal, h);
+            if (up)
+                AddAdj(curr, next, goal, h);
 
             next.row -= 2;
             bool down = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            //if (down)
-                //AddAdj(curr, next, goal, h);
+            if (down)
+                AddAdj(curr, next, goal, h);
 
             if (right && up)
             {
                 ++next.row;
                 ++next.col;
 
-                //if(!terrain->is_wall(next))
-                    //AddDiag(curr, next, goal, h);
+                if(!terrain->is_wall(next))
+                    AddDiag(curr, next, goal, h);
 
                 --next.row;
                 --next.col;
@@ -155,8 +155,8 @@ PathResult AStarPather::compute_path(PathRequest &request)
                 ++next.row;
                 --next.col;
 
-                //if (!terrain->is_wall(next))
-                    //AddDiag(curr, next, goal, h);
+                if (!terrain->is_wall(next))
+                    AddDiag(curr, next, goal, h);
 
                 --next.row;
                 ++next.col;
@@ -167,8 +167,8 @@ PathResult AStarPather::compute_path(PathRequest &request)
                 --next.row;
                 --next.col;
 
-                //if (!terrain->is_wall(next))
-                    //AddDiag(curr, next, goal, h);
+                if (!terrain->is_wall(next))
+                    AddDiag(curr, next, goal, h);
 
                 ++next.row;
                 ++next.col;
@@ -179,12 +179,10 @@ PathResult AStarPather::compute_path(PathRequest &request)
                 --next.row;
                 ++next.col;
 
-                //if (!terrain->is_wall(next))
-                    //AddDiag(curr, next, goal, h);
+                if (!terrain->is_wall(next))
+                    AddDiag(curr, next, goal, h);
             }
         }
-
-        
     }
 
     //open
