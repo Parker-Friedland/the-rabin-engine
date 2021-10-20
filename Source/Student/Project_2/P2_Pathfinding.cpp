@@ -10,10 +10,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
-typedef AStarPather::Node Node;
-typedef AStarPather::QUEUE QUEUE;
-typedef AStarPather::SET SET;
-typedef AStarPather::ITER ITER;
+//typedef AStarPather::Node Node;
+//typedef AStarPather::QUEUE QUEUE;
+//typedef AStarPather::ITER ITER;
 
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
@@ -47,6 +46,8 @@ bool AStarPather::initialize()
         Callback is just a typedef for std::function<void(void)>, so any std::invoke'able
         object that std::function can wrap will suffice.
     */
+
+
 
     return true; // return false if any errors actually occur, to stop engine initialization
 }
@@ -95,104 +96,129 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
     // WRITE YOUR CODE HERE
 
-    GridPos start = terrain->get_grid_position(request.start);
-    GridPos goal = terrain->get_grid_position(request.goal);
-
-    QUEUE openList = QUEUE(std::less<Node>(), std::vector<Node>());
-    SET allNodes = SET();
-
-    Heuristic h = request.settings.heuristic;
-
-    openList.emplace(start, h, goal);
-
-    while (!openList.empty())
+    if (request.newRequest)
     {
-        Node curr = openList.top();
-        openList.pop();
-
-        if (curr.IsOpen(allNodes))
-        {
-            if (curr._pos == goal)
-                return PathResult::COMPLETE;
-
-            GridPos next = curr._pos;
-
-            next.col += 1;
-            bool right = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            if (right)
-                AddAdj(curr, next, goal, h);
-
-            next.col -= 2;
-            bool left = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            if (left)
-                AddAdj(curr, next, goal, h);
-            next.col += 1;
-
-            next.row += 1;
-            bool up = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            if (up)
-                AddAdj(curr, next, goal, h);
-
-            next.row -= 2;
-            bool down = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            if (down)
-                AddAdj(curr, next, goal, h);
-
-            if (right && up)
-            {
-                ++next.row;
-                ++next.col;
-
-                if(!terrain->is_wall(next))
-                    AddDiag(curr, next, goal, h);
-
-                --next.row;
-                --next.col;
-            }
-
-            if (left && up)
-            {
-                ++next.row;
-                --next.col;
-
-                if (!terrain->is_wall(next))
-                    AddDiag(curr, next, goal, h);
-
-                --next.row;
-                ++next.col;
-            }
-
-            if (left && down)
-            {
-                --next.row;
-                --next.col;
-
-                if (!terrain->is_wall(next))
-                    AddDiag(curr, next, goal, h);
-
-                ++next.row;
-                ++next.col;
-            }
-
-            if (right && down)
-            {
-                --next.row;
-                ++next.col;
-
-                if (!terrain->is_wall(next))
-                    AddDiag(curr, next, goal, h);
-            }
-        }
+        request.newRequest = false;
+        InitRequest(request);
     }
 
-    //open
+    while (!_openList.empty())
+    {
+        Node curr = _openList.top();
+        _openList.pop();
+
+        if (curr.IsOpen(_allNodes))
+        {
+            if (curr._pos == _goal)
+            {
+                FinishRequest(request, curr);
+                return PathResult::COMPLETE;
+            }
+
+            ProcessRequest(curr);
+        }
+    }
     
     // Just sample code, safe to delete
     //GridPos start = terrain->get_grid_position(request.start);
     //GridPos goal = terrain->get_grid_position(request.goal);
-    terrain->set_color(start, Colors::Orange);
-    terrain->set_color(goal, Colors::Orange);
+    terrain->set_color(_start, Colors::Orange);
+    terrain->set_color(_goal, Colors::Orange);
     request.path.push_back(request.start);
     request.path.push_back(request.goal);
     return PathResult::COMPLETE;
+}
+
+void AStarPather::InitRequest(const PathRequest& request)
+{
+    _start = terrain->get_grid_position(request.start);
+    _goal = terrain->get_grid_position(request.goal);
+    _h = request.settings.heuristic;
+
+    _allNodes.clear();
+    while (!_openList.empty())
+        _openList.pop(); // The priority queue's container is a vector that has a
+                         // clear method so I shouldn't have to do this in O(n). 
+    _openList.emplace(_start, _h, _goal);
+    _allNodes.emplace(_start, _openList.top());
+}
+
+void AStarPather::ProcessRequest(Node& curr)
+{
+    GridPos next = curr._pos;
+
+    next.col += 1;
+    bool right = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
+    if (right)
+        AddAdj(curr, next, _goal, _h);
+
+    next.col -= 2;
+    bool left = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
+    if (left)
+        AddAdj(curr, next, _goal, _h);
+    next.col += 1;
+
+    next.row += 1;
+    bool up = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
+    if (up)
+        AddAdj(curr, next, _goal, _h);
+
+    next.row -= 2;
+    bool down = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
+    if (down)
+        AddAdj(curr, next, _goal, _h);
+
+    if (right && up)
+    {
+        ++next.row;
+        ++next.col;
+
+        if (!terrain->is_wall(next))
+            AddDiag(curr, next, _goal, _h);
+
+        --next.row;
+        --next.col;
+    }
+
+    if (left && up)
+    {
+        ++next.row;
+        --next.col;
+
+        if (!terrain->is_wall(next))
+            AddDiag(curr, next, _goal, _h);
+
+        --next.row;
+        ++next.col;
+    }
+
+    if (left && down)
+    {
+        --next.row;
+        --next.col;
+
+        if (!terrain->is_wall(next))
+            AddDiag(curr, next, _goal, _h);
+
+        ++next.row;
+        ++next.col;
+    }
+
+    if (right && down)
+    {
+        --next.row;
+        ++next.col;
+
+        if (!terrain->is_wall(next))
+            AddDiag(curr, next, _goal, _h);
+    }
+}
+
+void AStarPather::FinishRequest(PathRequest& request, const Node& goal)
+{
+    const Node* curr = &goal;
+    do
+    {
+        request.path.push_back(terrain->get_world_position(curr->_pos));
+    } while (curr = curr->_parent);
 }

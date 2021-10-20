@@ -31,6 +31,23 @@ public:
         It doesn't all need to be in this header and cpp, structure it whatever way
         makes sense to you.
     */
+    
+    GridPos _start;
+    GridPos _prev_start;
+    GridPos _goal;
+    Heuristic _h;
+
+    struct GridHash
+    {
+        GridHash() : _grid_width(terrain->get_map_width()) {}
+
+        int _grid_width;
+
+        size_t operator() (const GridPos& pos) const
+        {
+            return std::hash<int>()(_grid_width * pos.row + pos.col);
+        }
+    };
 
     struct Node
     {
@@ -45,21 +62,9 @@ public:
         Node(const GridPos &pos, Node &parent, Heuristic h, const GridPos &goal, bool diag) :
             _pos(pos), _parent(&parent), _g(parent._g + diag ? sqrtf(2) : 1), _f(_g + AStarPather::Distance(h, pos, goal)) {}
 
-        struct Hash
+        bool IsOpen(std::unordered_map<GridPos, Node, GridHash> m)
         {
-            Hash() : _grid_width(terrain->get_map_width()) {}
-
-            int _grid_width;
-
-            size_t operator() (const Node& node) const
-            {
-                return std::hash<int>()(_grid_width * node._pos.row + node._pos.col);
-            }
-        };
-
-        bool IsOpen(std::unordered_set<Node, Hash> s)
-        {
-            return _f == s.find(*this)->_f;
+            return _f == m.find(_pos)->second._f;
         }
 
         bool IsOpen()
@@ -88,26 +93,17 @@ public:
         }
     };
 
-    struct GridHash
-    {
-        GridHash() : _grid_width(terrain->get_map_width()) {}
-
-        int _grid_width;
-
-        size_t operator() (const GridPos& pos) const
-        {
-            return std::hash<int>()(_grid_width * pos.row + pos.col);
-        }
-    };
-
     typedef std::priority_queue<Node, std::vector<Node>, std::less<Node>> QUEUE;
-    typedef std::unordered_set<Node, Node::Hash> SET;
-
     typedef std::unordered_map<GridPos, Node, GridHash> MAP;
     typedef MAP::iterator ITER;
 
     QUEUE _openList;
     MAP _allNodes;
+
+    void InitRequest(const PathRequest& request);
+    void ProcessRequest(Node& curr);
+    void DebugRequest();
+    void FinishRequest(PathRequest& request, const Node& goal);
 
     template <bool diag>
     void AddNeighboor(Node &curr, const GridPos& nextPos, const GridPos& goal, const Heuristic& h)
@@ -127,12 +123,12 @@ public:
         }
     }
 
-    void AddAdj(Node& curr, const GridPos& next, const GridPos& goal, const Heuristic& h)
+    inline void AddAdj(Node& curr, const GridPos& next, const GridPos& goal, const Heuristic& h)
     {
         AddNeighboor<false>(curr, next, goal, h);
     }
 
-    void AddDiag(Node& curr, const GridPos& next, const GridPos& goal, const Heuristic& h)
+    inline void AddDiag(Node& curr, const GridPos& next, const GridPos& goal, const Heuristic& h)
     {
         AddNeighboor<true>(curr, next, goal, h);
     }
