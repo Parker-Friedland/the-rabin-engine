@@ -100,6 +100,9 @@ PathResult AStarPather::compute_path(PathRequest &request)
     {
         request.newRequest = false;
         InitRequest(request);
+
+        if (_debugColor)
+            ColorInit();
     }
 
     while (!_openList.empty())
@@ -116,6 +119,9 @@ PathResult AStarPather::compute_path(PathRequest &request)
             }
 
             ProcessRequest(curr);
+
+            if (_debugColor)
+                ColorClosed(curr._pos);
         }
     }
     
@@ -131,9 +137,11 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
 void AStarPather::InitRequest(const PathRequest& request)
 {
+    _debugColor = request.settings.debugColoring;
+    _h = request.settings.heuristic;
+
     _start = terrain->get_grid_position(request.start);
     _goal = terrain->get_grid_position(request.goal);
-    _h = request.settings.heuristic;
 
     _allNodes.clear();
     while (!_openList.empty())
@@ -150,23 +158,23 @@ void AStarPather::ProcessRequest(Node& curr)
     next.col += 1;
     bool right = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
     if (right)
-        AddAdj(curr, next, _goal, _h);
+        AddAdj(curr, next);
 
     next.col -= 2;
     bool left = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
     if (left)
-        AddAdj(curr, next, _goal, _h);
+        AddAdj(curr, next);
     next.col += 1;
 
     next.row += 1;
     bool up = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
     if (up)
-        AddAdj(curr, next, _goal, _h);
+        AddAdj(curr, next);
 
     next.row -= 2;
     bool down = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
     if (down)
-        AddAdj(curr, next, _goal, _h);
+        AddAdj(curr, next);
 
     if (right && up)
     {
@@ -174,7 +182,7 @@ void AStarPather::ProcessRequest(Node& curr)
         ++next.col;
 
         if (!terrain->is_wall(next))
-            AddDiag(curr, next, _goal, _h);
+            AddDiag(curr, next);
 
         --next.row;
         --next.col;
@@ -186,7 +194,7 @@ void AStarPather::ProcessRequest(Node& curr)
         --next.col;
 
         if (!terrain->is_wall(next))
-            AddDiag(curr, next, _goal, _h);
+            AddDiag(curr, next);
 
         --next.row;
         ++next.col;
@@ -198,7 +206,7 @@ void AStarPather::ProcessRequest(Node& curr)
         --next.col;
 
         if (!terrain->is_wall(next))
-            AddDiag(curr, next, _goal, _h);
+            AddDiag(curr, next);
 
         ++next.row;
         ++next.col;
@@ -210,7 +218,7 @@ void AStarPather::ProcessRequest(Node& curr)
         ++next.col;
 
         if (!terrain->is_wall(next))
-            AddDiag(curr, next, _goal, _h);
+            AddDiag(curr, next);
     }
 }
 
@@ -221,4 +229,20 @@ void AStarPather::FinishRequest(PathRequest& request, const Node& goal)
     {
         request.path.push_back(terrain->get_world_position(curr->_pos));
     } while (curr = curr->_parent);
+}
+
+void AStarPather::ColorInit()
+{
+    terrain->set_color(_start, Colors::Orange);
+    terrain->set_color(_goal, Colors::Orange);
+}
+
+void AStarPather:: ColorOpen(const GridPos& open)
+{
+    terrain->set_color(open, Colors::Blue);
+}
+
+void AStarPather::ColorClosed(const GridPos& closed)
+{
+    terrain->set_color(closed, Colors::Yellow);
 }

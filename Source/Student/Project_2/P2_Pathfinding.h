@@ -33,9 +33,9 @@ public:
     */
     
     GridPos _start;
-    GridPos _prev_start;
     GridPos _goal;
     Heuristic _h;
+    bool _debugColor;
 
     struct GridHash
     {
@@ -102,17 +102,20 @@ public:
 
     void InitRequest(const PathRequest& request);
     void ProcessRequest(Node& curr);
-    void DebugRequest();
     void FinishRequest(PathRequest& request, const Node& goal);
 
+    inline void ColorInit();
+    inline void ColorOpen(const GridPos& open);
+    inline void ColorClosed(const GridPos& closed);
+
     template <bool diag>
-    void AddNeighboor(Node &curr, const GridPos& nextPos, const GridPos& goal, const Heuristic& h)
+    void AddNeighboor(Node &curr, const GridPos& nextPos)
     {
         Node& next = _allNodes[nextPos];
         next._pos = nextPos;
 
         float g = curr._g + diag ? sqrtf(2) : 1;
-        float f = g + Distance(h, nextPos, goal);
+        float f = g + Distance(_h, nextPos, _goal);
 
         if (f < next._f)
         {
@@ -120,17 +123,20 @@ public:
             next._g = g;
             next._parent = &curr;
             _openList.emplace(nextPos, curr, g, f);
+
+            if (_debugColor)
+                ColorOpen(nextPos);
         }
     }
 
-    inline void AddAdj(Node& curr, const GridPos& next, const GridPos& goal, const Heuristic& h)
+    inline void AddAdj(Node& curr, const GridPos& next)
     {
-        AddNeighboor<false>(curr, next, goal, h);
+        AddNeighboor<false>(curr, next);
     }
 
-    inline void AddDiag(Node& curr, const GridPos& next, const GridPos& goal, const Heuristic& h)
+    inline void AddDiag(Node& curr, const GridPos& next)
     {
-        AddNeighboor<true>(curr, next, goal, h);
+        AddNeighboor<true>(curr, next);
     }
 
     static float Distance(Heuristic const &h, GridPos const &start, GridPos const &end)
