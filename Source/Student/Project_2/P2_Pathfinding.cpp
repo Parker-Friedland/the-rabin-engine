@@ -2,52 +2,18 @@
 #include "Projects/ProjectTwo.h"
 #include "P2_Pathfinding.h"
 
-#define _USE_MATH_DEFINES
-
 #include <cmath>
 #include <numbers>
 #include <algorithm>
+#include <map>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
 
-struct Node
-{
-    Node(GridPos pos, Heuristic h, GridPos goal) :
-        _pos(pos), _parent(nullptr), _g(0), _f(AStarPather::Distance(h, pos, goal)) {}
-
-    Node(GridPos pos, Node* parent, float g, float f) :
-        _pos(pos), _parent(parent), _g(g), _f(f) {}
-
-    Node(GridPos pos, Node* parent, Heuristic h, GridPos goal, bool diag) :
-        _pos(pos), _parent(parent), _g(parent->_g + diag ? sqrtf(2) : 1), _f(_g + AStarPather::Distance(h, pos, goal)) {}
-
-    bool IsOpen(std::unordered_map<GridPos, Node> m)
-    {
-        _f == m.find(_pos)->second._f;
-    }
-
-    GridPos _pos;
-    const Node* _parent;
-    float _g; // given cost
-    float _f; // given cost + heuristic cost
-
-    bool operator<(const Node& rhs) const
-    {
-        return _f < rhs._f;
-    }
-
-    bool operator==(const Node& rhs) const
-    {
-        return _pos == rhs._pos;
-    }
-
-    bool operator!=(const Node& rhs) const
-    {
-        return _pos != rhs._pos;
-    }
-};
-
-typedef std::priority_queue<Node, std::vector<Node>, std::less<Node>> QUEUE;
-typedef std::unordered_map<GridPos, Node> MAP;
-typedef MAP::iterator IT;
+typedef AStarPather::Node Node;
+typedef AStarPather::QUEUE QUEUE;
+typedef AStarPather::SET SET;
+typedef AStarPather::ITER ITER;
 
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
@@ -133,7 +99,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
     GridPos goal = terrain->get_grid_position(request.goal);
 
     QUEUE openList = QUEUE(std::less<Node>(), std::vector<Node>());
-    MAP allNodes = MAP();
+    SET allNodes = SET();
 
     Heuristic h = request.settings.heuristic;
 
@@ -149,37 +115,36 @@ PathResult AStarPather::compute_path(PathRequest &request)
             if (curr._pos == goal)
                 return PathResult::COMPLETE;
 
-            float g, f;
             GridPos next = curr._pos;
 
             next.col += 1;
             bool right = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            if (right)
-                AddAdj(curr, next, goal, h);
+            //if (right)
+                //AddAdj(curr, next, goal, h);
 
             next.col -= 2;
             bool left = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            if (left)
-                AddAdj(curr, next, goal, h);
+            //if (left)
+                //AddAdj(curr, next, goal, h);
             next.col += 1;
 
             next.row += 1;
             bool up = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            if (up)
-                AddAdj(curr, next, goal, h);
+            //if (up)
+                //AddAdj(curr, next, goal, h);
 
             next.row -= 2;
             bool down = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
-            if (down)
-                AddAdj(curr, next, goal, h);
+            //if (down)
+                //AddAdj(curr, next, goal, h);
 
             if (right && up)
             {
                 ++next.row;
                 ++next.col;
 
-                if(!terrain->is_wall(next))
-                    AddDiag(curr, next, goal, h);
+                //if(!terrain->is_wall(next))
+                    //AddDiag(curr, next, goal, h);
 
                 --next.row;
                 --next.col;
@@ -190,8 +155,8 @@ PathResult AStarPather::compute_path(PathRequest &request)
                 ++next.row;
                 --next.col;
 
-                if (!terrain->is_wall(next))
-                    AddDiag(curr, next, goal, h);
+                //if (!terrain->is_wall(next))
+                    //AddDiag(curr, next, goal, h);
 
                 --next.row;
                 ++next.col;
@@ -202,8 +167,8 @@ PathResult AStarPather::compute_path(PathRequest &request)
                 --next.row;
                 --next.col;
 
-                if (!terrain->is_wall(next))
-                    AddDiag(curr, next, goal, h);
+                //if (!terrain->is_wall(next))
+                    //AddDiag(curr, next, goal, h);
 
                 ++next.row;
                 ++next.col;
@@ -214,8 +179,8 @@ PathResult AStarPather::compute_path(PathRequest &request)
                 --next.row;
                 ++next.col;
 
-                if (!terrain->is_wall(next))
-                    AddDiag(curr, next, goal, h);
+                //if (!terrain->is_wall(next))
+                    //AddDiag(curr, next, goal, h);
             }
         }
 
@@ -232,9 +197,4 @@ PathResult AStarPather::compute_path(PathRequest &request)
     request.path.push_back(request.start);
     request.path.push_back(request.goal);
     return PathResult::COMPLETE;
-}
-
-float calculateH(Heuristic hType)
-{
-
 }
