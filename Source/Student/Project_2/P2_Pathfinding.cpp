@@ -131,7 +131,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
             if (_debugColor)
                 ColorClosed(curr._pos);
 
-            //return PathResult::PROCESSING;
+            return PathResult::PROCESSING;
         }
     }
     
