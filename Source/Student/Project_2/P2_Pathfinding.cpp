@@ -10,9 +10,53 @@
 #include <unordered_map>
 #include <unordered_set>
 
-//typedef AStarPather::Node Node;
-//typedef AStarPather::QUEUE QUEUE;
-//typedef AStarPather::ITER ITER;
+GridHash::GridHash() : _grid_width(terrain->get_map_width()) {}
+
+size_t GridHash::operator() (const GridPos& pos) const
+{
+    return std::hash<int>()(_grid_width * pos.row + pos.col);
+}
+
+Node::Node() : _f(0) {}
+
+Node::Node(const GridPos& pos, const Heuristic& h, const GridPos& goal) :
+        _pos(pos), _parent(nullptr), _g(0), _f(AStarPather::Distance(h, pos, goal)) {}
+
+Node::Node(const GridPos& pos, Node& parent, float g, float f) :
+        _pos(pos), _parent(&parent), _g(g), _f(f) {}
+
+Node::Node(const GridPos& pos, Node& parent, Heuristic h, const GridPos& goal, bool diag) :
+        _pos(pos), _parent(&parent), _g(parent._g + diag ? sqrtf(2) : 1), _f(_g + AStarPather::Distance(h, pos, goal)) {}
+
+bool Node::IsOpen(std::unordered_map<GridPos, Node, GridHash> m)
+{
+    return _f == m.find(_pos)->second._f;
+}
+
+bool Node::IsOpen()
+{
+    return true;
+}
+
+GridPos _pos;
+Node* _parent;
+float _g; // given cost
+float _f; // given cost + heuristic cost
+
+bool Node::operator<(const Node& rhs) const
+{
+    return _f < rhs._f;
+}
+
+bool Node::operator==(const Node& rhs) const
+{
+    return _pos == rhs._pos;
+}
+
+bool Node::operator!=(const Node& rhs) const
+{
+    return _pos != rhs._pos;
+}
 
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
