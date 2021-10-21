@@ -42,8 +42,7 @@ public:
         makes sense to you.
     */
     
-    GridPos _start;
-    GridPos _goal;
+    int _goal;
     Heuristic _h;
     bool _debugColor;
 
@@ -63,18 +62,15 @@ public:
     {
         Node() : _f(std::numeric_limits<float>::max()) {}
 
-        Node(const GridPos& pos, const Heuristic& h, const GridPos& goal) :
-            _pos(pos), _parent(nullptr), _g(0), _f(AStarPather::Distance(h, pos, goal)) {}
+        Node(int pos, int goal, Heuristic h) :
+            _self(pos), _parent(-1), _g(0), _f(AStarPather::Distance_SE(h, pos, goal)) {}
 
-        Node(const GridPos& pos, Node& parent, float g, float f) :
-            _pos(pos), _parent(&parent), _g(g), _f(f) {}
+        Node(int pos, int parent, float g, float f) :
+            _self(pos), _parent(parent), _g(g), _f(f) {}
 
-        Node(const GridPos& pos, Node& parent, Heuristic h, const GridPos& goal, bool diag) :
-            _pos(pos), _parent(&parent), _g(parent._g + diag ? sqrtf(2) : 1), _f(_g + AStarPather::Distance(h, pos, goal)) {}
-
-        bool IsOpen(std::unordered_map<GridPos, Node, GridHash> m)
+        bool IsOpen(std::unordered_map<int, Node> m)
         {
-            return _f == m.find(_pos)->second._f;
+            return _f == m.find(_self)->second._f;
         }
 
         bool IsOpen()
@@ -82,8 +78,9 @@ public:
             return true;
         }
 
-        GridPos _pos;
-        Node* _parent;
+        //GridPos _pos;
+        int _self;
+        int _parent;
         float _g; // given cost
         float _f; // given cost + heuristic cost
 
@@ -94,17 +91,25 @@ public:
 
         bool operator==(const Node& rhs) const
         {
-            return _pos == rhs._pos;
+            return _self == rhs._self;
         }
 
         bool operator!=(const Node& rhs) const
         {
-            return _pos != rhs._pos;
+            return _self != rhs._self;
         }
     };
 
+    // pos
+    // parent
+    // f
     typedef std::priority_queue<Node, std::vector<Node>, std::greater<Node>> QUEUE;
-    typedef std::unordered_map<GridPos, Node, GridHash> MAP;
+    // self
+    // pos
+    // g
+    // f
+    typedef std::unordered_map<int, Node> MAP;
+    // self
     typedef MAP::iterator ITER;
 
     QUEUE _openList;
@@ -113,50 +118,51 @@ public:
     bool wait = false;
 
     void InitRequest(const PathRequest& request);
-    void ProcessRequest(Node& curr);
-    void FinishRequest(PathRequest& request, const Node& goal);
+    void FinishRequest(PathRequest& request);
 
-    inline void ColorInit();
-    inline void ColorOpen(const GridPos& open);
-    inline void ColorClosed(const GridPos& closed);
+    inline void ColorInit(int start);
+    inline void ColorOpen(int open);
+    inline void ColorClosed(int closed);
+
+    void AddNeighboors(Node& curr);
 
     template <bool diag>
-    void AddNeighboor(Node &curr, const GridPos& nextPos)
+    void AddNeighboor(Node &curr, int nextPos)
     {
         Node& next = _allNodes[nextPos];
-        next._pos = nextPos;
+        next._self = nextPos;
 
         float g = curr._g + diag ? sqrtf(2) : 1;
-        float f = g + Distance(_h, nextPos, _goal);
+        float f = g + Distance_SE(_h, nextPos, _goal);
 
         if (f < next._f)
         {
             next._f = f;
             next._g = g;
-            next._parent = &curr;
-            _openList.emplace(nextPos, curr, g, f);
+            next._parent = curr._self;
+            _openList.emplace(nextPos, curr._self, g, f);
 
             if (_debugColor)
                 ColorOpen(nextPos);
         }
     }
 
-    inline void AddAdj(Node& curr, const GridPos& next)
+    inline void AddAdj(Node& curr, int next)
     {
         AddNeighboor<false>(curr, next);
     }
 
-    inline void AddDiag(Node& curr, const GridPos& next)
+    inline void AddDiag(Node& curr, int next)
     {
         AddNeighboor<true>(curr, next);
     }
 
-    static float Distance(Heuristic const &h, GridPos const &start, GridPos const &end)
+    static float Distance_SE(Heuristic const &h, int start, int end)
     {
-        return Distance(h, end.col - start.col, end.row - start.row);
+        return Distance_XY(h, IntToCol(end) - IntToCol(start), IntToRow(end) - IntToRow(start));
     }
 
-    static float Distance(Heuristic const &h, int const &x, int const &y)
+    static float Distance_XY(Heuristic const &h, int x, int y)
     {
         switch (h)
         {
@@ -191,5 +197,30 @@ public:
     static float Octile(int x, int y)
     {
         return Manhattan(x, y) + (std::sqrtf(2) - 1) * Chebyshev(x, y);
+    }
+
+    inline static int GridToInt(const GridPos& p)
+    {
+        return grid_width * p.row + p.col;
+    }
+
+    inline static const GridPos& IntToGrid(int i)
+    {
+        return GridPos{ IntToRow(i), IntToCol(i) };
+    }
+
+    inline static int IntToRow(int i)
+    {
+        return i / grid_width;
+    }
+
+    inline static int IntToCol(int i)
+    {
+        return i % grid_width;
+    }
+
+    inline static int CoordToInt(int r, int c)
+    {
+        return grid_width * r + c;
     }
 };

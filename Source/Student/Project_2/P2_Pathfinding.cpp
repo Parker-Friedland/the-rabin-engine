@@ -96,9 +96,6 @@ PathResult AStarPather::compute_path(PathRequest &request)
     {
         request.newRequest = false;
         InitRequest(request);
-
-        if (_debugColor)
-            ColorInit();
     }
 
     /*if (wait)
@@ -120,18 +117,18 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
         if (curr.IsOpen(_allNodes))
         {
-            if (curr._pos == _goal)
+            if (curr._self == _goal)
             {
-                FinishRequest(request, curr);
+                FinishRequest(request);
                 return PathResult::COMPLETE;
             }
 
-            ProcessRequest(curr);
+            AddNeighboors(curr);
 
             if (_debugColor)
-                ColorClosed(curr._pos);
+                ColorClosed(curr._self);
 
-            //return PathResult::PROCESSING;
+            return PathResult::PROCESSING;
         }
     }
     
@@ -147,114 +144,109 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
 void AStarPather::InitRequest(const PathRequest& request)
 {
+    grid_width = terrain->get_map_width();
+    int start = GridToInt(terrain->get_grid_position(request.start));
+    _goal = GridToInt(terrain->get_grid_position(request.goal));
     _debugColor = request.settings.debugColoring;
     _h = request.settings.heuristic;
-    _start = terrain->get_grid_position(request.start);
-    _goal = terrain->get_grid_position(request.goal);
-    grid_width = terrain->get_map_width();
+
+    if (_debugColor)
+        ColorInit(start);
 
     _allNodes.clear();
     while (!_openList.empty())
         _openList.pop(); // The priority queue's container is a vector that has a
                          // clear method so I shouldn't have to do this in O(n). 
-    _openList.emplace(_start, _h, _goal);
-    _allNodes.emplace(_start, _openList.top());
+    _openList.emplace(start, _goal, _h);
+    _allNodes.emplace(start, _openList.top());
 }
 
-void AStarPather::ProcessRequest(Node& curr)
+void AStarPather::AddNeighboors(Node& curr)
 {
-    GridPos next = curr._pos;
+    int row = IntToRow(curr._self);
+    int col = IntToCol(curr._self);
 
-    next.col += 1;
-    bool right = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
+    col += 1;
+    bool right = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
     if (right)
-        AddAdj(curr, next);
+        AddAdj(curr, CoordToInt(row, col));
 
-    next.col -= 2;
-    bool left = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
+    col -= 2;
+    bool left = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
     if (left)
-        AddAdj(curr, next);
-    next.col += 1;
+        AddAdj(curr, CoordToInt(row, col));
+    col += 1;
 
-    next.row += 1;
-    bool up = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
+    row += 1;
+    bool up = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
     if (up)
-        AddAdj(curr, next);
+        AddAdj(curr, CoordToInt(row, col));
 
-    next.row -= 2;
-    bool down = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
+    row -= 2;
+    bool down = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
     if (down)
-        AddAdj(curr, next);
-    next.row += 1;
+        AddAdj(curr, CoordToInt(row, col));
+    row += 1;
 
     if (right && up)
     {
-        ++next.row;
-        ++next.col;
-
-        if (!terrain->is_wall(next))
-            AddDiag(curr, next);
-
-        --next.row;
-        --next.col;
+        ++row;
+        ++col;
+        if (!terrain->is_wall(row, col))
+            AddDiag(curr, CoordToInt(row, col));
+        --row;
+        --col;
     }
 
     if (left && up)
     {
-        ++next.row;
-        --next.col;
-
-        if (!terrain->is_wall(next))
-            AddDiag(curr, next);
-
-        --next.row;
-        ++next.col;
+        ++row;
+        --col;
+        if (!terrain->is_wall(row, col))
+            AddDiag(curr, CoordToInt(row, col));
+        --row;
+        ++col;
     }
 
     if (left && down)
     {
-        --next.row;
-        --next.col;
-
-        if (!terrain->is_wall(next))
-            AddDiag(curr, next);
-
-        ++next.row;
-        ++next.col;
+        --row;
+        --col;
+        if (!terrain->is_wall(row, col))
+            AddDiag(curr, CoordToInt(row, col));
+        ++row;
+        ++col;
     }
 
     if (right && down)
     {
-        --next.row;
-        ++next.col;
-
-        if (!terrain->is_wall(next))
-            AddDiag(curr, next);
+        --row;
+        ++col;
+        if (!terrain->is_wall(row, col))
+            AddDiag(curr, CoordToInt(row, col));
     }
 }
 
-void AStarPather::FinishRequest(PathRequest& request, const Node& goal)
+void AStarPather::FinishRequest(PathRequest& request)
 {
-    const Node* curr = &goal;
     do
     {
-        request.path.push_back(terrain->get_world_position(curr->_pos));
-        //request.path.push_front(terrain->get_world_position(curr->_pos));
-    } while (curr = curr->_parent);
+        request.path.push_back(terrain->get_world_position(IntToRow(_goal), IntToCol(_goal)));
+    } while (_goal = _allNodes[_goal]._parent >= 0);
 }
 
-void AStarPather::ColorInit()
+void AStarPather::ColorInit(int start)
 {
-    terrain->set_color(_start, Colors::Orange);
-    terrain->set_color(_goal, Colors::Orange);
+    terrain->set_color(IntToRow(start), IntToCol(start), Colors::Orange);
+    terrain->set_color(IntToRow(_goal), IntToCol(_goal), Colors::Orange);
 }
 
-void AStarPather::ColorOpen(const GridPos& open)
+void AStarPather::ColorOpen(int open)
 {
-    terrain->set_color(open, Colors::Blue);
+    terrain->set_color(IntToRow(open), IntToCol(open), Colors::Blue);
 }
 
-void AStarPather::ColorClosed(const GridPos& closed)
+void AStarPather::ColorClosed(int closed)
 {
-    terrain->set_color(closed, Colors::Yellow);
+    terrain->set_color(IntToRow(closed), IntToCol(closed), Colors::Yellow);
 }
