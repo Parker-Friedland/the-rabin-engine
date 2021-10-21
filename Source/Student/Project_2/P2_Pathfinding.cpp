@@ -10,54 +10,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-GridHash::GridHash() : _grid_width(terrain->get_map_width()) {}
-
-size_t GridHash::operator() (const GridPos& pos) const
-{
-    return std::hash<int>()(_grid_width * pos.row + pos.col);
-}
-
-Node::Node() : _f(0) {}
-
-Node::Node(const GridPos& pos, const Heuristic& h, const GridPos& goal) :
-        _pos(pos), _parent(nullptr), _g(0), _f(AStarPather::Distance(h, pos, goal)) {}
-
-Node::Node(const GridPos& pos, Node& parent, float g, float f) :
-        _pos(pos), _parent(&parent), _g(g), _f(f) {}
-
-Node::Node(const GridPos& pos, Node& parent, Heuristic h, const GridPos& goal, bool diag) :
-        _pos(pos), _parent(&parent), _g(parent._g + diag ? sqrtf(2) : 1), _f(_g + AStarPather::Distance(h, pos, goal)) {}
-
-bool Node::IsOpen(std::unordered_map<GridPos, Node, GridHash> m)
-{
-    return _f == m.find(_pos)->second._f;
-}
-
-bool Node::IsOpen()
-{
-    return true;
-}
-
-GridPos _pos;
-Node* _parent;
-float _g; // given cost
-float _f; // given cost + heuristic cost
-
-bool Node::operator<(const Node& rhs) const
-{
-    return _f < rhs._f;
-}
-
-bool Node::operator==(const Node& rhs) const
-{
-    return _pos == rhs._pos;
-}
-
-bool Node::operator!=(const Node& rhs) const
-{
-    return _pos != rhs._pos;
-}
-
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
 {
@@ -149,6 +101,18 @@ PathResult AStarPather::compute_path(PathRequest &request)
             ColorInit();
     }
 
+    /*if (wait)
+    {
+        int s = 0;
+        for (int i = 0; i < 1000; ++i)
+        {
+            s += i;
+        }
+        wait = s < 69;
+        return PathResult::PROCESSING;
+    }
+    wait = true;*/
+
     while (!_openList.empty())
     {
         Node curr = _openList.top();
@@ -166,16 +130,18 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
             if (_debugColor)
                 ColorClosed(curr._pos);
+
+            //return PathResult::PROCESSING;
         }
     }
     
     // Just sample code, safe to delete
     //GridPos start = terrain->get_grid_position(request.start);
     //GridPos goal = terrain->get_grid_position(request.goal);
-    terrain->set_color(_start, Colors::Orange);
-    terrain->set_color(_goal, Colors::Orange);
-    request.path.push_back(request.start);
-    request.path.push_back(request.goal);
+    //terrain->set_color(_start, Colors::Orange);
+    //terrain->set_color(_goal, Colors::Orange);
+    //request.path.push_back(request.start);
+    //request.path.push_back(request.goal);
     return PathResult::COMPLETE;
 }
 
@@ -183,9 +149,9 @@ void AStarPather::InitRequest(const PathRequest& request)
 {
     _debugColor = request.settings.debugColoring;
     _h = request.settings.heuristic;
-
     _start = terrain->get_grid_position(request.start);
     _goal = terrain->get_grid_position(request.goal);
+    grid_width = terrain->get_map_width();
 
     _allNodes.clear();
     while (!_openList.empty())
@@ -219,6 +185,7 @@ void AStarPather::ProcessRequest(Node& curr)
     bool down = terrain->is_valid_grid_position(next) && !terrain->is_wall(next);
     if (down)
         AddAdj(curr, next);
+    next.row += 1;
 
     if (right && up)
     {
@@ -272,6 +239,7 @@ void AStarPather::FinishRequest(PathRequest& request, const Node& goal)
     do
     {
         request.path.push_back(terrain->get_world_position(curr->_pos));
+        //request.path.push_front(terrain->get_world_position(curr->_pos));
     } while (curr = curr->_parent);
 }
 
@@ -281,7 +249,7 @@ void AStarPather::ColorInit()
     terrain->set_color(_goal, Colors::Orange);
 }
 
-void AStarPather:: ColorOpen(const GridPos& open)
+void AStarPather::ColorOpen(const GridPos& open)
 {
     terrain->set_color(open, Colors::Blue);
 }

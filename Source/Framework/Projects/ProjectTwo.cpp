@@ -55,7 +55,10 @@ bool ProjectTwo::initialize()
     terrain = std::make_unique<Terrain>();
     agents = std::make_unique<AgentOrganizer>();
     ui = std::make_unique<UICoordinator>();
-    pather = std::make_unique<AStarPather>();
+
+    bool terrainInit = terrain->initialize(); // terrain must be initialized first
+    if(terrainInit)
+        pather = std::make_unique<AStarPather>();
 
     return terrain->initialize() &&
         agents->initialize() &&
@@ -316,7 +319,6 @@ void ProjectTwo::on_left_mouse_click()
             agent->path_to(worldPos.first);
         }
     }
-    
 }
 
 void ProjectTwo::on_f1()

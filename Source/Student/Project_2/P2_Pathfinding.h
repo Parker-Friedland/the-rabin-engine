@@ -9,35 +9,15 @@
 #include <unordered_map>
 #include <unordered_set>
 
-struct GridHash
-{
-    GridHash();
-    int _grid_width;
-    size_t operator() (const GridPos& pos) const;
-};
-
-struct Node
-{
-    Node();
-    Node(const GridPos& pos, const Heuristic& h, const GridPos& goal);
-    Node(const GridPos& pos, Node& parent, float g, float f);
-    Node(const GridPos& pos, Node& parent, Heuristic h, const GridPos& goal, bool diag);
-    bool IsOpen(std::unordered_map<GridPos, Node, GridHash> m);
-    bool IsOpen();
-
-    GridPos _pos;
-    Node* _parent;
-    float _g; // given cost
-    float _f; // given cost + heuristic cost
-
-    bool operator<(const Node& rhs) const;
-    bool operator==(const Node& rhs) const;
-    bool operator!=(const Node& rhs) const;
-};
-
-using QUEUE = std::priority_queue<Node, std::vector<Node>, std::less<Node>>;
-using MAP = std::unordered_map<GridPos, Node, GridHash>;
-using ITER = MAP::iterator;
+static int grid_width; // Don't like that this had to be public and static but it was the ONLY way this would work
+                       //
+                       // Can't believe I spent like 3+ hours figuring out how to pass this STUPID variable to GridHash
+                       //
+                       // Feel like vs is messing with me
+                       //
+                       // Whoever is grading this, if you know why c++ wouldn't let me just make this variable a static 
+                       // member of GridHash and set it in void AStarPather::InitRequest(const PathRequest& request)
+                       // please tell me for what reason that wasn't allowed
 
 class AStarPather
 {
@@ -67,8 +47,70 @@ public:
     Heuristic _h;
     bool _debugColor;
 
+    struct GridHash
+    {
+        GridHash() {}
+
+        size_t operator() (const GridPos& pos) const
+        {
+            return std::hash<int>()(grid_width * pos.row + pos.col);
+        }
+    };
+
+    GridHash _hash;
+
+    struct Node
+    {
+        Node() : _f(std::numeric_limits<float>::max()) {}
+
+        Node(const GridPos& pos, const Heuristic& h, const GridPos& goal) :
+            _pos(pos), _parent(nullptr), _g(0), _f(AStarPather::Distance(h, pos, goal)) {}
+
+        Node(const GridPos& pos, Node& parent, float g, float f) :
+            _pos(pos), _parent(&parent), _g(g), _f(f) {}
+
+        Node(const GridPos& pos, Node& parent, Heuristic h, const GridPos& goal, bool diag) :
+            _pos(pos), _parent(&parent), _g(parent._g + diag ? sqrtf(2) : 1), _f(_g + AStarPather::Distance(h, pos, goal)) {}
+
+        bool IsOpen(std::unordered_map<GridPos, Node, GridHash> m)
+        {
+            return _f == m.find(_pos)->second._f;
+        }
+
+        bool IsOpen()
+        {
+            return true;
+        }
+
+        GridPos _pos;
+        Node* _parent;
+        float _g; // given cost
+        float _f; // given cost + heuristic cost
+
+        bool operator>(const Node& rhs) const
+        {
+            return _f > rhs._f;
+        }
+
+        bool operator==(const Node& rhs) const
+        {
+            return _pos == rhs._pos;
+        }
+
+        bool operator!=(const Node& rhs) const
+        {
+            return _pos != rhs._pos;
+        }
+    };
+
+    typedef std::priority_queue<Node, std::vector<Node>, std::greater<Node>> QUEUE;
+    typedef std::unordered_map<GridPos, Node, GridHash> MAP;
+    typedef MAP::iterator ITER;
+
     QUEUE _openList;
     MAP _allNodes;
+
+    bool wait = false;
 
     void InitRequest(const PathRequest& request);
     void ProcessRequest(Node& curr);
