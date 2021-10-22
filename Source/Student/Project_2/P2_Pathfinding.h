@@ -119,7 +119,7 @@ public:
 
     void InitRequest(const PathRequest& request);
     void FinishRequest(PathRequest& request);
-    void FinishRequest_RBVer(PathRequest& request);
+    void Rubberbanding(PathRequest& request);
 
     inline void ColorInit(int start);
     inline void ColorOpen(int open);
