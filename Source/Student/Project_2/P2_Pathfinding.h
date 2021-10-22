@@ -119,6 +119,7 @@ public:
 
     void InitRequest(const PathRequest& request);
     void FinishRequest(PathRequest& request);
+    void FinishRequest_RBVer(PathRequest& request);
 
     inline void ColorInit(int start);
     inline void ColorOpen(int open);
@@ -132,7 +133,7 @@ public:
         Node& next = _allNodes[nextPos];
         next._self = nextPos;
 
-        float g = curr._g + diag ? sqrtf(2) : 1;
+        float g = curr._g + (diag ? sqrtf(2) : 1);
         float f = g + Distance_SE(_h, nextPos, _goal);
 
         if (f < next._f)

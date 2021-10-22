@@ -128,7 +128,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
             if (_debugColor)
                 ColorClosed(curr._self);
 
-            return PathResult::PROCESSING;
+            //return PathResult::PROCESSING;
         }
     }
     
@@ -229,10 +229,63 @@ void AStarPather::AddNeighboors(Node& curr)
 
 void AStarPather::FinishRequest(PathRequest& request)
 {
-    do
+    if (!request.settings.rubberBanding)
+        do
+        {
+            request.path.push_front(terrain->get_world_position(IntToRow(_goal), IntToCol(_goal)));
+        } while ((_goal = _allNodes[_goal]._parent) >= 0);
+    else
+        FinishRequest_RBVer(request);
+}
+
+void AStarPather::FinishRequest_RBVer(PathRequest& request)
+{
+    int back = _goal;
+
+    // incase start and goal are the same node
+    //if (_allNodes[back]._parent < 0)
+     //   return;
+
+    int mid = _allNodes[back]._parent;
+    int front = _allNodes[mid]._parent;
+
+    while (front >= 0)
     {
-        request.path.push_back(terrain->get_world_position(IntToRow(_goal), IntToCol(_goal)));
-    } while (_goal = _allNodes[_goal]._parent >= 0);
+        int mid = _allNodes[back]._parent;
+        int front = _allNodes[mid]._parent;
+
+        while (front >= 0)
+        {
+            int r1 = std::min<int>(IntToRow(back), IntToRow(front));
+            int r2 = std::max<int>(IntToRow(back), IntToRow(front));
+            int c1 = std::min<int>(IntToCol(back), IntToCol(front));
+            int c2 = std::max<int>(IntToCol(back), IntToCol(front));
+
+            bool skip = true;
+            for (int r = r1; r <= r2; ++r)
+                for (int c = c1; c <= c2; ++c)
+                    if (terrain->is_wall(r, c))
+                    {
+                        skip = false;
+                        break;
+                    }
+
+            if (skip)
+            {
+                _allNodes[back]._parent = front;
+                mid = front;
+            }
+            else
+            {
+                back = mid;
+                mid = front;
+                break;
+            }
+        }
+
+    }
+
+    request.path.push_front(terrain->get_world_position(IntToRow(back), IntToCol(back)));
 }
 
 void AStarPather::ColorInit(int start)

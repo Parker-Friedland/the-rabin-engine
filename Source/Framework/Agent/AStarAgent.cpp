@@ -74,23 +74,32 @@ void AStarAgent::update(float dt)
             if (request.path.size() > 0)
             {
                 const auto &currPos = get_position();
-                auto delta = (request.path.front() - currPos);
 
-                if (delta.LengthSquared() <= 0.1f)
+                if (buffer.settings.smoothing)
                 {
-                    request.path.pop_front();
+                    t += get_movement_speed() * 0.25f * dt / static_cast<float>(terrain->get_map_width());
+                    CatmullRomUpdate();
                 }
                 else
                 {
-                    float lenSq = delta.LengthSquared();
-                    float dist = get_movement_speed() * dt / static_cast<float>(terrain->get_map_width());
-                    float distSq = dist * dist;
-                    const auto movement = distSq > lenSq ? delta : dist * delta / std::sqrt(lenSq);
+                    auto delta = (request.path.front() - currPos);
 
-                    set_position(currPos + movement);
+                    if (delta.LengthSquared() <= 0.1f)
+                    {
+                        request.path.pop_front();
+                    }
+                    else
+                    {
+                        float lenSq = delta.LengthSquared();
+                        float dist = get_movement_speed() * dt / static_cast<float>(terrain->get_map_width());
+                        float distSq = dist * dist;
+                        const auto movement = distSq > lenSq ? delta : dist * delta / std::sqrt(lenSq);
 
-                    const float yaw = std::atan2(delta.x, delta.z);
-                    set_yaw(yaw);
+                        set_position(currPos + movement);
+
+                        const float yaw = std::atan2(delta.x, delta.z);
+                        set_yaw(yaw);
+                    }
                 }
             }
         }
@@ -119,6 +128,7 @@ void AStarAgent::path_to(const Vec3 &point, bool timed)
         request.goal = point;
         request.settings = buffer.settings;
         request.newRequest = true;
+        initCat = true;
 
         if (movement != Movement::TELEPORT)
         {

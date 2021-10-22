@@ -88,4 +88,75 @@ protected:
 
     void on_map_change();
     
+    float t;
+    WaypointList::iterator a;
+    WaypointList::iterator b;
+    WaypointList::iterator c;
+    WaypointList::iterator d;
+    Vec3 lastPos;
+
+    bool initCat = true;
+
+    void CatmullRomInit()
+    {
+        initCat = false;
+
+        request.path.push_back(request.path.back());
+
+        b = request.path.begin();
+        ++(c = b);
+        ++(d = c);
+
+        request.path.push_front(*b);
+        a = request.path.begin();
+
+        lastPos = get_position();
+        t = 0.f;
+    }
+
+    void CatmullRomUpdate()
+    {
+        if (initCat)
+            CatmullRomInit();
+
+        if (t > 1.f)
+        {
+            t -= 1.f;
+            a = b;
+            b = c;
+            c = d;
+            d = ++d;
+
+            if(d != request.path.end())
+                request.path.pop_front();
+            else
+            {
+                set_position(*c);
+                request.path.clear();
+                initCat = true;
+                return;
+            }
+        }
+
+        Vec3 newPos = CatmullRom(*a, *b, *c, *d, t);
+
+        Vec3 delta = lastPos - newPos;
+        const float yaw = std::atan2(delta.x, delta.z);
+
+        set_position(newPos);
+        set_yaw(yaw);
+
+        lastPos = newPos;
+    }
+
+    Vec3 CatmullRom(const Vec3& a, const Vec3& b, const Vec3& c, const Vec3& d, float t)
+    {
+        float t2;
+        float t3 = (t2 = t * t) * t;
+
+        return a * (-0.5f * t3 +        t2 - 0.5f * t       )
+             + b * ( 1.5f * t3 - 2.5f * t2            + 1.0f)
+             + c * (-1.5f * t3 + 2.0f * t2 + 0.5f * t       )
+             + d * ( 0.5f * t3 - 0.5f * t2                  );
+    }
 };
