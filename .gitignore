@@ -33,4 +33,4 @@
 
 # Visual Studio Local Temp Files
 .vs/
-x64/Debug/**
+x64/**

@@ -131,15 +131,8 @@ PathResult AStarPather::compute_path(PathRequest &request)
             //return PathResult::PROCESSING;
         }
     }
-    
-    // Just sample code, safe to delete
-    //GridPos start = terrain->get_grid_position(request.start);
-    //GridPos goal = terrain->get_grid_position(request.goal);
-    //terrain->set_color(_start, Colors::Orange);
-    //terrain->set_color(_goal, Colors::Orange);
-    //request.path.push_back(request.start);
-    //request.path.push_back(request.goal);
-    return PathResult::COMPLETE;
+
+    return PathResult::IMPOSSIBLE;
 }
 
 void AStarPather::InitRequest(const PathRequest& request)
@@ -149,6 +142,7 @@ void AStarPather::InitRequest(const PathRequest& request)
     _goal = GridToInt(terrain->get_grid_position(request.goal));
     _debugColor = request.settings.debugColoring;
     _h = request.settings.heuristic;
+    _weight = request.settings.weight;
 
     if (_debugColor)
         ColorInit(start);
@@ -157,7 +151,7 @@ void AStarPather::InitRequest(const PathRequest& request)
     while (!_openList.empty())
         _openList.pop(); // The priority queue's container is a vector that has a
                          // clear method so I shouldn't have to do this in O(n). 
-    _openList.emplace(start, _goal, _h);
+    _openList.emplace(start, _goal, _weight, _h);
     _allNodes.emplace(start, _openList.top());
 }
 

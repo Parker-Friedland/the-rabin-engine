@@ -42,6 +42,7 @@ public:
         makes sense to you.
     */
     
+    float _weight;
     int _goal;
     Heuristic _h;
     bool _debugColor;
@@ -62,8 +63,8 @@ public:
     {
         Node() : _f(std::numeric_limits<float>::max()) {}
 
-        Node(int pos, int goal, Heuristic h) :
-            _self(pos), _parent(-1), _g(0), _f(AStarPather::Distance_SE(h, pos, goal)) {}
+        Node(int pos, int goal, float weight, Heuristic h) :
+            _self(pos), _parent(-1), _g(0), _f(weight * AStarPather::Distance_SE(h, pos, goal)) {}
 
         Node(int pos, int parent, float g, float f) :
             _self(pos), _parent(parent), _g(g), _f(f) {}
@@ -134,7 +135,12 @@ public:
         next._self = nextPos;
 
         float g = curr._g + (diag ? sqrtf(2) : 1);
-        float f = g + Distance_SE(_h, nextPos, _goal);
+        float f = g + (_weight * Distance_SE(_h, nextPos, _goal));
+
+        if (curr._g < 0)
+        {
+            bool whatthefuck = true;
+        }
 
         if (f < next._f)
         {
@@ -195,9 +201,14 @@ public:
         return static_cast<float>(std::max(std::abs(x), std::abs(y)));
     }
 
+    static float Min(int x, int y)
+    {
+        return static_cast<float>(std::min(std::abs(x), std::abs(y)));
+    }
+
     static float Octile(int x, int y)
     {
-        return Manhattan(x, y) + (std::sqrtf(2) - 1) * Chebyshev(x, y);
+        return Chebyshev(x, y) + (std::sqrtf(2) - 1) * Min(x, y);
     }
 
     inline static int GridToInt(const GridPos& p)
