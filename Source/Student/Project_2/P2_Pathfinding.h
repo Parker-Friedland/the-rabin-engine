@@ -137,11 +137,6 @@ public:
         float g = curr._g + (diag ? sqrtf(2) : 1);
         float f = g + (_weight * Distance_SE(_h, nextPos, _goal));
 
-        if (curr._g < 0)
-        {
-            bool whatthefuck = true;
-        }
-
         if (f < next._f)
         {
             next._f = f;
