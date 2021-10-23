@@ -20,6 +20,8 @@ written consent of DigiPen Institute of Technology is prohibited.
 #include <iomanip>
 #include <fstream>
 
+#include "../Student/Project_2/P2_Pathfinding.h"
+
 namespace fs = std::filesystem;
 
 const std::wstring screenshots[] = { L"Diagonal_", L"Smooth_", L"Rubber_", L"Smooth_Rubber_" };
@@ -155,8 +157,10 @@ void PathTester::execute_speed_test()
 
     for (size_t i = 0; i < numIter; ++i)
     {
-        printf("%d", (int)i);
 
+        //printf("%d", (int)i);
+
+        //pathtimer.start();
         timer.start();
 
         for (const auto &[start, goal] : speedPaths)
@@ -166,6 +170,7 @@ void PathTester::execute_speed_test()
         }
 
         timer.stop();
+        //pathtimer.stop();
 
         results[i] = timer.microseconds();
 
@@ -176,6 +181,11 @@ void PathTester::execute_speed_test()
 
         total += results[i].count();
     }
+
+
+    //std::cout << "Init: " << initTime << " microseconds" << std::endl << std::endl;
+    //std::cout << "Add: " << addTime << " microseconds" << std::endl << std::endl;
+    //std::cout << "Finish: " << finalTime << " microseconds" << std::endl << std::endl;
 
     std::stringstream filename;
     filename << "Output/SpeedTest_";

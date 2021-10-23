@@ -113,15 +113,6 @@ PathResult AStarPather::compute_path(PathRequest &request)
     while (!_openList.empty())
     {
         Node curr = _openList.top();
-
-        if (curr.IsOpen(_allNodes) && red)
-        {
-            terrain->set_color(IntToRow(curr._pos), IntToCol(curr._pos), Colors::Red);
-            red = false;
-            return PathResult::PROCESSING;
-        }
-        red = true;
-
         _openList.pop();
 
         if (curr.IsOpen(_allNodes))
@@ -137,7 +128,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
             if (debug)
                 ColorClosed(curr._pos);
 
-            return PathResult::PROCESSING;
+            //return PathResult::PROCESSING;
         }
     }
 
@@ -146,6 +137,8 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
 void AStarPather::InitRequest(const PathRequest& request)
 {
+    //auto t1 = pathtimer.now();
+
     grid_width = terrain->get_map_width();
     int start = GridToInt(terrain->get_grid_position(request.start));
     goal = GridToInt(terrain->get_grid_position(request.goal));
@@ -169,10 +162,15 @@ void AStarPather::InitRequest(const PathRequest& request)
     _openList.emplace(start);
     //_allNodes.emplace(_allNodes.cbegin() + start);
     _allNodes[start].SetStart();
+
+    //auto t2 = pathtimer.now();
+    //initTime += (t2 - t1).count();
 }
 
 void AStarPather::AddNeighboors(Node& curr)
 {
+    //auto t1 = pathtimer.now();
+
     int x = IntToCol(curr._pos);
     int y = IntToRow(curr._pos);
 
@@ -196,10 +194,15 @@ void AStarPather::AddNeighboors(Node& curr)
                 AddDiag(curr, CoordToInt(row, col), i);
         }
     }
+
+    //auto t2 = pathtimer.now();
+    //addTime += (t2 - t1).count();
 }
 
 void AStarPather::FinishRequest(PathRequest& request)
 {
+    //auto t1 = pathtimer.now();
+
     if (request.settings.rubberBanding)
         Rubberbanding(request);
 
@@ -216,6 +219,9 @@ void AStarPather::FinishRequest(PathRequest& request)
         c -= _x_comp[d];
         r -= _y_comp[d];
     }
+
+    //auto t2 = pathtimer.now();
+    //finalTime += (t2 - t1).count();
 }
 
 void AStarPather::Rubberbanding(PathRequest& request)

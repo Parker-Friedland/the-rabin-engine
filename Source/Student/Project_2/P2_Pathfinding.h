@@ -12,6 +12,13 @@
 #include <iostream>
 #include <cstring>
 
+
+#include <pch.h>
+#include <sstream>
+#include "Misc/Stopwatch.h"
+#include <iomanip>
+#include <fstream>
+
 // Don't like that this had to be public and static but it was the ONLY way this would work
 static float weight;
 static int grid_width;
@@ -21,11 +28,18 @@ static bool debug;
 
 static bool red = true;
 
-static float sqrt2 = std::sqrtf(2);
+//static Stopwatch pathtimer;
+
+//static std::chrono::nanoseconds::rep initTime;
+//static std::chrono::nanoseconds::rep addTime;
+//static std::chrono::nanoseconds::rep finalTime;
+
+static const float sqrt2 = std::sqrtf(2);
 
 class AStarPather
 {
 public:
+
 
     /* 
         The class should be default constructible, so you may need to define a constructor.
@@ -137,14 +151,21 @@ public:
 
     bool wait = false;
 
+    //Stopwatch mytimer;
+
+    //static std::chrono::microseconds::rep initTime;
     void InitRequest(const PathRequest& request);
+
+    //static std::chrono::microseconds::rep finishTime;
     void FinishRequest(PathRequest& request);
+
     void Rubberbanding(PathRequest& request);
 
     inline void ColorInit(int start);
     inline void ColorOpen(int open);
     inline void ColorClosed(int closed);
 
+    //static std::chrono::microseconds::rep addTime;
     void AddNeighboors(Node& curr);
 
     template <bool diag>
