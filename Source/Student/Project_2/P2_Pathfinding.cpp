@@ -117,7 +117,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
         if (curr.IsOpen(_allNodes))
         {
-            if (curr._self == _goal)
+            if (curr._pos == _goal)
             {
                 FinishRequest(request);
                 return PathResult::COMPLETE;
@@ -126,7 +126,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
             AddNeighboors(curr);
 
             if (_debugColor)
-                ColorClosed(curr._self);
+                ColorClosed(curr._pos);
 
             //return PathResult::PROCESSING;
         }
@@ -151,8 +151,8 @@ void AStarPather::InitRequest(const PathRequest& request)
     _allNodes.reserve(size);
     //std::memset(&_allNodes[0], 0, sizeof(_allNodes[0]) * size);
 
-    const NodeCore_ unexplored = NodeCore_{ std::numeric_limits<std::bitset<6>>::max(),
-                                            std::numeric_limits<std::bitset<6>>::max() };
+    const NodeCore unexplored = NodeCore(std::numeric_limits<CountT>::max(),
+                                         std::numeric_limits<CountT>::max());
     std::fill(_allNodes.cbegin(), _allNodes.cbegin() + size, unexplored);
 
     while (!_openList.empty())
@@ -164,67 +164,28 @@ void AStarPather::InitRequest(const PathRequest& request)
 
 void AStarPather::AddNeighboors(Node& curr)
 {
-    int row = IntToRow(curr._self);
-    int col = IntToCol(curr._self);
+    int x = IntToRow(curr._pos);
+    int y = IntToCol(curr._pos);
 
-    col += 1;
-    bool right = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
-    if (right)
-        AddAdj(curr, CoordToInt(row, col));
+    bool cardResult[4];
 
-    col -= 2;
-    bool left = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
-    if (left)
-        AddAdj(curr, CoordToInt(row, col));
-    col += 1;
-
-    row += 1;
-    bool up = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
-    if (up)
-        AddAdj(curr, CoordToInt(row, col));
-
-    row -= 2;
-    bool down = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
-    if (down)
-        AddAdj(curr, CoordToInt(row, col));
-    row += 1;
-
-    if (right && up)
+    for (DirectT i = cardStart; i < cardEnd; ++i)
     {
-        ++row;
-        ++col;
-        if (!terrain->is_wall(row, col))
-            AddDiag(curr, CoordToInt(row, col));
-        --row;
-        --col;
+        int row = x + _x_comp[i];
+        int col = y + _y_comp[i];
+        if(cardResult[i] = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col))
+            AddCard(curr, CoordToInt(row, col));
     }
 
-    if (left && up)
+    for (DirectT i = diagStart; i < diagEnd; ++i)
     {
-        ++row;
-        --col;
-        if (!terrain->is_wall(row, col))
-            AddDiag(curr, CoordToInt(row, col));
-        --row;
-        ++col;
-    }
-
-    if (left && down)
-    {
-        --row;
-        --col;
-        if (!terrain->is_wall(row, col))
-            AddDiag(curr, CoordToInt(row, col));
-        ++row;
-        ++col;
-    }
-
-    if (right && down)
-    {
-        --row;
-        ++col;
-        if (!terrain->is_wall(row, col))
-            AddDiag(curr, CoordToInt(row, col));
+        if (cardResult[i % numEach] && cardResult[(i + 1) % 4])
+        {
+            int row = x + _x_comp[i];
+            int col = y + _y_comp[i];
+            if(cardResult[i] = !terrain->is_wall(row, col))
+                AddDiag(curr, CoordToInt(row, col));
+        }
     }
 }
 

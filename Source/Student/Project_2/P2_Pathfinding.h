@@ -54,7 +54,24 @@ public:
     bool _debugColor;
 
     typedef int CountT;
-    typedef char ParentT;
+    typedef char DirectT;
+
+    static constexpr int _x_comp[8] = { 1,  0, -1,  0,
+                                        1, -1,  1, -1 };
+    static constexpr int _y_comp[8] = { 0,  1,  0, -1,
+                                        1,  1, -1, -1 };
+
+    static constexpr int cardStart = 0;
+    static constexpr int cardEnd = 4;
+    static constexpr int diagStart = 4;
+    static constexpr int diagEnd = 8;
+    static constexpr int numEach = 4;
+
+    static constexpr int _d_adj[8] = { 0,  1,  0, -1,
+                                       1,  1, -1, -1 };
+
+    //int _x_comp[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
+    //int _y_comp[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
 
     struct NodeCore
     {
@@ -63,7 +80,7 @@ public:
 
         CountT _c; // cardinal
         CountT _d; // diagnal
-        ParentT _parent;
+        DirectT _parent;
     };
 
     typedef std::vector<NodeCore> VECTOR;
@@ -144,7 +161,7 @@ public:
         }
     }
 
-    inline void AddAdj(Node& curr, int next)
+    inline void AddCard(Node& curr, int next)
     {
         AddNeighboor<false>(curr, next);
     }
