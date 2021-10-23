@@ -19,6 +19,8 @@ static int goal;
 static Heuristic h;
 static bool debug;
 
+static bool red = true;
+
 static float sqrt2 = std::sqrtf(2);
 
 class AStarPather
@@ -50,7 +52,7 @@ public:
     typedef char DirectT;
 
     static constexpr int _x_comp[8] = { 1,  0, -1,  0,
-                                        1, -1,  1, -1 };
+                                        1, -1, -1,  1 };
     static constexpr int _y_comp[8] = { 0,  1,  0, -1,
                                         1,  1, -1, -1 };
 
@@ -59,19 +61,34 @@ public:
     static constexpr int diagStart = 4;
     static constexpr int diagEnd = 8;
     static constexpr int numEach = 4;
+    static constexpr int done = 8;
 
     //int _x_comp[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
     //int _y_comp[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
 
     struct NodeCore
     {
-        NodeCore() : _c(0), _d(0) {};
-        NodeCore(CountT c, CountT d) : _c(c), _d(d) {};
+        NodeCore() : _c(std::numeric_limits<CountT>::max()), _d(std::numeric_limits<CountT>::max()) {}
+
+        NodeCore(CountT c, CountT d) : _c(c), _d(d) {}
+
+        NodeCore(const NodeCore& other) : _c(other._c), _d(other._d) {}
+
+        void SetStart()
+        {
+            _c = 0;
+            _d = 0;
+            _parent = done;
+        }
+
+        NodeCore& operator=(const NodeCore& other) = default;
 
         CountT _c; // cardinal
         CountT _d; // diagnal
         DirectT _parent;
     };
+
+    //NodeCore unexplored = { std::numeric_limits<CountT>::max(), std::numeric_limits<CountT>::max() };
 
     typedef std::vector<NodeCore> VECTOR;
 
@@ -135,10 +152,10 @@ public:
     {
         NodeCore& core = _allNodes[pos];
 
-        if (CostGiven(curr._c + !diag, curr._c + diag) < CostGiven(core._c, core._d))
+        if (CostGiven(curr._c + !diag, curr._d + diag) < CostGiven(core._c, core._d))
         {
             core._c = curr._c + !diag;
-            core._d = curr._c +  diag;
+            core._d = curr._d +  diag;
             core._parent = direct;
             _openList.emplace(pos, core._c, core._d);
 

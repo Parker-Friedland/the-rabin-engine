@@ -113,6 +113,15 @@ PathResult AStarPather::compute_path(PathRequest &request)
     while (!_openList.empty())
     {
         Node curr = _openList.top();
+
+        if (curr.IsOpen(_allNodes) && red)
+        {
+            terrain->set_color(IntToRow(curr._pos), IntToCol(curr._pos), Colors::Red);
+            red = false;
+            return PathResult::PROCESSING;
+        }
+        red = true;
+
         _openList.pop();
 
         if (curr.IsOpen(_allNodes))
@@ -128,7 +137,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
             if (debug)
                 ColorClosed(curr._pos);
 
-            //return PathResult::PROCESSING;
+            return PathResult::PROCESSING;
         }
     }
 
@@ -148,42 +157,42 @@ void AStarPather::InitRequest(const PathRequest& request)
         ColorInit(start);
 
     const int size = grid_width * terrain->get_map_height();
-    _allNodes.reserve(size);
-    //std::memset(&_allNodes[0], 0, sizeof(_allNodes[0]) * size);
+    _allNodes.clear();
+    _allNodes.resize(size);
+    //std::memset(&_allNodes[0], static_cast<int>(NodeCore()), sizeof(_allNodes[0]) * size);
 
-    //const NodeCore& unexplored = NodeCore(std::numeric_limits<CountT>::max(),
-    //                                      std::numeric_limits<CountT>::max());
     //std::fill(_allNodes.cbegin(), _allNodes.cbegin() + size, unexplored);
 
     while (!_openList.empty())
         _openList.pop(); // The priority queue's container is a vector that has a
                          // clear method so I shouldn't have to do this in O(n). 
     _openList.emplace(start);
-    _allNodes.emplace(_allNodes.cbegin() + start);
+    //_allNodes.emplace(_allNodes.cbegin() + start);
+    _allNodes[start].SetStart();
 }
 
 void AStarPather::AddNeighboors(Node& curr)
 {
-    int x = IntToRow(curr._pos);
-    int y = IntToCol(curr._pos);
+    int x = IntToCol(curr._pos);
+    int y = IntToRow(curr._pos);
 
     bool cardResult[4];
 
     for (DirectT i = cardStart; i < cardEnd; ++i)
     {
-        int row = x + _x_comp[i];
-        int col = y + _y_comp[i];
+        int col = x + _x_comp[i];
+        int row = y + _y_comp[i];
         if(cardResult[i] = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col))
             AddCard(curr, CoordToInt(row, col), i);
     }
 
     for (DirectT i = diagStart; i < diagEnd; ++i)
     {
-        if (cardResult[i % numEach] && cardResult[(i + 1) % 4])
+        if (cardResult[i % numEach] && cardResult[(i + 1) % numEach])
         {
-            int row = x + _x_comp[i];
-            int col = y + _y_comp[i];
-            if(cardResult[i] = !terrain->is_wall(row, col))
+            int col = x + _x_comp[i];
+            int row = y + _y_comp[i];
+            if(!terrain->is_wall(row, col))
                 AddDiag(curr, CoordToInt(row, col), i);
         }
     }
@@ -194,10 +203,19 @@ void AStarPather::FinishRequest(PathRequest& request)
     if (request.settings.rubberBanding)
         Rubberbanding(request);
 
-    do
+    int r = IntToRow(goal);
+    int c = IntToCol(goal);
+    char d;
+
+    while(true)
     {
-        request.path.push_front(terrain->get_world_position(IntToRow(goal), IntToCol(goal)));
-    } while ((goal = _allNodes[goal]._parent) >= 0);
+        request.path.push_front(terrain->get_world_position(r, c));
+        d = _allNodes[CoordToInt(r,c)]._parent;
+        if (d == done)
+            break;
+        c -= _x_comp[d];
+        r -= _y_comp[d];
+    }
 }
 
 void AStarPather::Rubberbanding(PathRequest& request)
