@@ -147,12 +147,19 @@ void AStarPather::InitRequest(const PathRequest& request)
     if (_debugColor)
         ColorInit(start);
 
-    _allNodes.clear();
+    const int size = grid_width * terrain->get_map_height();
+    _allNodes.reserve(size);
+    //std::memset(&_allNodes[0], 0, sizeof(_allNodes[0]) * size);
+
+    const NodeCore_ unexplored = NodeCore_{ std::numeric_limits<std::bitset<6>>::max(),
+                                            std::numeric_limits<std::bitset<6>>::max() };
+    std::fill(_allNodes.cbegin(), _allNodes.cbegin() + size, unexplored);
+
     while (!_openList.empty())
         _openList.pop(); // The priority queue's container is a vector that has a
                          // clear method so I shouldn't have to do this in O(n). 
     _openList.emplace(start, _goal, _weight, _h);
-    _allNodes.emplace(start, _openList.top());
+    _allNodes.emplace(_allNodes.cbegin() + start, 0, 0);
 }
 
 void AStarPather::AddNeighboors(Node& curr)

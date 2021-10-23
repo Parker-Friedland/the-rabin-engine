@@ -8,6 +8,9 @@
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <bitset>
+#include <iostream>
+#include <cstring>
 
 static int grid_width; // Don't like that this had to be public and static but it was the ONLY way this would work
                        //
@@ -18,6 +21,8 @@ static int grid_width; // Don't like that this had to be public and static but i
                        // Whoever is grading this, if you know why c++ wouldn't let me just make this variable a static 
                        // member of GridHash and set it in void AStarPather::InitRequest(const PathRequest& request)
                        // please tell me for what reason that wasn't allowed
+
+static float sqrt2 = std::sqrtf(2);
 
 class AStarPather
 {
@@ -42,79 +47,69 @@ public:
         makes sense to you.
     */
     
-    float _weight;
-    int _goal;
-    Heuristic _h;
+    static float _weight;
+    static int _start;
+    static int _goal;
+    static Heuristic _h;
     bool _debugColor;
 
-    struct GridHash
-    {
-        GridHash() {}
+    typedef int CountT;
+    typedef char ParentT;
 
-        size_t operator() (const GridPos& pos) const
-        {
-            return std::hash<int>()(grid_width * pos.row + pos.col);
-        }
+    struct NodeCore
+    {
+        NodeCore() : _c(0), _d(0) {};
+        NodeCore(CountT c, CountT d) : _c(c), _d(d) {};
+
+        CountT _c; // cardinal
+        CountT _d; // diagnal
+        ParentT _parent;
     };
 
-    GridHash _hash;
+    typedef std::vector<NodeCore> VECTOR;
+
+    typedef int PosT;
 
     struct Node
     {
-        Node() : _f(std::numeric_limits<float>::max()) {}
+        Node(PosT pos) :
+            _pos(pos), _c(0), _d(0) {}
 
-        Node(int pos, int goal, float weight, Heuristic h) :
-            _self(pos), _parent(-1), _g(0), _f(weight * AStarPather::Distance_SE(h, pos, goal)) {}
+        Node(PosT pos, CountT c, CountT d) :
+            _pos(pos), _c(c), _d(d) {}
 
-        Node(int pos, int parent, float g, float f) :
-            _self(pos), _parent(parent), _g(g), _f(f) {}
-
-        bool IsOpen(std::unordered_map<int, Node> m)
+        bool IsOpen(VECTOR v)
         {
-            return _f == m.find(_self)->second._f;
+            const NodeCore& node = v[_pos];
+            return node._c == _c
+                && node._d == _d;
         }
 
-        bool IsOpen()
-        {
-            return true;
-        }
-
-        //GridPos _pos;
-        int _self;
-        int _parent;
-        float _g; // given cost
-        float _f; // given cost + heuristic cost
+        PosT _pos;
+        CountT _c;
+        CountT _d;
 
         bool operator>(const Node& rhs) const
         {
-            return _f > rhs._f;
+            return AStarPather::GetCostEst(_c, _d, _pos) 
+                 > AStarPather::GetCostEst(rhs._c, rhs._d, rhs._pos);
         }
 
         bool operator==(const Node& rhs) const
         {
-            return _self == rhs._self;
+            return _pos == rhs._pos;
         }
 
         bool operator!=(const Node& rhs) const
         {
-            return _self != rhs._self;
+            return _pos != rhs._pos;
         }
     };
 
-    // pos
-    // parent
-    // f
     typedef std::priority_queue<Node, std::vector<Node>, std::greater<Node>> QUEUE;
-    // self
-    // pos
-    // g
-    // f
-    typedef std::unordered_map<int, Node> MAP;
-    // self
-    typedef MAP::iterator ITER;
 
     QUEUE _openList;
-    MAP _allNodes;
+    VECTOR _allNodes;
 
     bool wait = false;
 
@@ -159,14 +154,19 @@ public:
         AddNeighboor<true>(curr, next);
     }
 
-    static float Distance_SE(Heuristic const &h, int start, int end)
+    static float GetCostEst(int c, int d, int start)
     {
-        return Distance_XY(h, IntToCol(end) - IntToCol(start), IntToRow(end) - IntToRow(start));
+        return c + sqrt2 * d + DistanceToGoal(start);
     }
 
-    static float Distance_XY(Heuristic const &h, int x, int y)
+    static float DistanceToGoal(int pos)
     {
-        switch (h)
+        return Distance_XY(IntToCol(_goal) - IntToCol(pos), IntToRow(_goal) - IntToRow(pos));
+    }
+
+    static float Distance_XY(int x, int y)
+    {
+        switch (_h)
         {
         case Heuristic::OCTILE:
             return Octile(x, y);
