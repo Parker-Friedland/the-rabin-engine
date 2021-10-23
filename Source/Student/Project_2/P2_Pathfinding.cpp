@@ -117,7 +117,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
         if (curr.IsOpen(_allNodes))
         {
-            if (curr._pos == _goal)
+            if (curr._pos == goal)
             {
                 FinishRequest(request);
                 return PathResult::COMPLETE;
@@ -125,7 +125,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
             AddNeighboors(curr);
 
-            if (_debugColor)
+            if (debug)
                 ColorClosed(curr._pos);
 
             //return PathResult::PROCESSING;
@@ -139,10 +139,10 @@ void AStarPather::InitRequest(const PathRequest& request)
 {
     grid_width = terrain->get_map_width();
     int start = GridToInt(terrain->get_grid_position(request.start));
-    _goal = GridToInt(terrain->get_grid_position(request.goal));
-    _debugColor = request.settings.debugColoring;
-    _h = request.settings.heuristic;
-    _weight = request.settings.weight;
+    goal = GridToInt(terrain->get_grid_position(request.goal));
+    debug = request.settings.debugColoring;
+    h = request.settings.heuristic;
+    weight = request.settings.weight;
 
     if (_debugColor)
         ColorInit(start);
@@ -151,15 +151,15 @@ void AStarPather::InitRequest(const PathRequest& request)
     _allNodes.reserve(size);
     //std::memset(&_allNodes[0], 0, sizeof(_allNodes[0]) * size);
 
-    const NodeCore unexplored = NodeCore(std::numeric_limits<CountT>::max(),
-                                         std::numeric_limits<CountT>::max());
-    std::fill(_allNodes.cbegin(), _allNodes.cbegin() + size, unexplored);
+    //const NodeCore& unexplored = NodeCore(std::numeric_limits<CountT>::max(),
+    //                                      std::numeric_limits<CountT>::max());
+    //std::fill(_allNodes.cbegin(), _allNodes.cbegin() + size, unexplored);
 
     while (!_openList.empty())
         _openList.pop(); // The priority queue's container is a vector that has a
                          // clear method so I shouldn't have to do this in O(n). 
-    _openList.emplace(start, _goal, _weight, _h);
-    _allNodes.emplace(_allNodes.cbegin() + start, 0, 0);
+    _openList.emplace(start);
+    _allNodes.emplace(_allNodes.cbegin() + start);
 }
 
 void AStarPather::AddNeighboors(Node& curr)
@@ -174,7 +174,7 @@ void AStarPather::AddNeighboors(Node& curr)
         int row = x + _x_comp[i];
         int col = y + _y_comp[i];
         if(cardResult[i] = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col))
-            AddCard(curr, CoordToInt(row, col));
+            AddCard(curr, CoordToInt(row, col), i);
     }
 
     for (DirectT i = diagStart; i < diagEnd; ++i)
@@ -184,7 +184,7 @@ void AStarPather::AddNeighboors(Node& curr)
             int row = x + _x_comp[i];
             int col = y + _y_comp[i];
             if(cardResult[i] = !terrain->is_wall(row, col))
-                AddDiag(curr, CoordToInt(row, col));
+                AddDiag(curr, CoordToInt(row, col), i);
         }
     }
 }
@@ -196,13 +196,13 @@ void AStarPather::FinishRequest(PathRequest& request)
 
     do
     {
-        request.path.push_front(terrain->get_world_position(IntToRow(_goal), IntToCol(_goal)));
-    } while ((_goal = _allNodes[_goal]._parent) >= 0);
+        request.path.push_front(terrain->get_world_position(IntToRow(goal), IntToCol(goal)));
+    } while ((goal = _allNodes[goal]._parent) >= 0);
 }
 
 void AStarPather::Rubberbanding(PathRequest& request)
 {
-    int back = _goal;
+    int back = goal;
 
     // incase start and goal are the same node
     int mid = _allNodes[back]._parent;
@@ -240,7 +240,7 @@ void AStarPather::Rubberbanding(PathRequest& request)
 void AStarPather::ColorInit(int start)
 {
     terrain->set_color(IntToRow(start), IntToCol(start), Colors::Orange);
-    terrain->set_color(IntToRow(_goal), IntToCol(_goal), Colors::Orange);
+    terrain->set_color(IntToRow(goal), IntToCol(goal), Colors::Orange);
 }
 
 void AStarPather::ColorOpen(int open)

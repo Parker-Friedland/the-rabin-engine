@@ -12,15 +12,12 @@
 #include <iostream>
 #include <cstring>
 
-static int grid_width; // Don't like that this had to be public and static but it was the ONLY way this would work
-                       //
-                       // Can't believe I spent like 3+ hours figuring out how to pass this STUPID variable to GridHash
-                       //
-                       // Feel like vs is messing with me
-                       //
-                       // Whoever is grading this, if you know why c++ wouldn't let me just make this variable a static 
-                       // member of GridHash and set it in void AStarPather::InitRequest(const PathRequest& request)
-                       // please tell me for what reason that wasn't allowed
+// Don't like that this had to be public and static but it was the ONLY way this would work
+static float weight;
+static int grid_width;
+static int goal;
+static Heuristic h;
+static bool debug;
 
 static float sqrt2 = std::sqrtf(2);
 
@@ -46,11 +43,7 @@ public:
         It doesn't all need to be in this header and cpp, structure it whatever way
         makes sense to you.
     */
-    
-    static float _weight;
-    static int _start;
-    static int _goal;
-    static Heuristic _h;
+
     bool _debugColor;
 
     typedef int CountT;
@@ -66,9 +59,6 @@ public:
     static constexpr int diagStart = 4;
     static constexpr int diagEnd = 8;
     static constexpr int numEach = 4;
-
-    static constexpr int _d_adj[8] = { 0,  1,  0, -1,
-                                       1,  1, -1, -1 };
 
     //int _x_comp[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
     //int _y_comp[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
@@ -97,9 +87,9 @@ public:
 
         bool IsOpen(VECTOR v)
         {
-            const NodeCore& node = v[_pos];
-            return node._c == _c
-                && node._d == _d;
+            const NodeCore& core = v[_pos];
+            return core._c == _c
+                && core._d == _d;
         }
 
         PosT _pos;
@@ -108,8 +98,8 @@ public:
 
         bool operator>(const Node& rhs) const
         {
-            return AStarPather::GetCostEst(_c, _d, _pos) 
-                 > AStarPather::GetCostEst(rhs._c, rhs._d, rhs._pos);
+            return AStarPather::CostEst(_c, _d, _pos)
+                 > AStarPather::CostEst(rhs._c, rhs._d, rhs._pos);
         }
 
         bool operator==(const Node& rhs) const
@@ -141,49 +131,50 @@ public:
     void AddNeighboors(Node& curr);
 
     template <bool diag>
-    void AddNeighboor(Node &curr, int nextPos)
+    void AddNeighboor(Node &curr, int pos, DirectT direct)
     {
-        Node& next = _allNodes[nextPos];
-        next._self = nextPos;
+        NodeCore& core = _allNodes[pos];
 
-        float g = curr._g + (diag ? sqrtf(2) : 1);
-        float f = g + (_weight * Distance_SE(_h, nextPos, _goal));
-
-        if (f < next._f)
+        if (CostGiven(curr._c + !diag, curr._c + diag) < CostGiven(core._c, core._d))
         {
-            next._f = f;
-            next._g = g;
-            next._parent = curr._self;
-            _openList.emplace(nextPos, curr._self, g, f);
+            core._c = curr._c + !diag;
+            core._d = curr._c +  diag;
+            core._parent = direct;
+            _openList.emplace(pos, core._c, core._d);
 
-            if (_debugColor)
-                ColorOpen(nextPos);
+            if (debug)
+                ColorOpen(pos);
         }
     }
 
-    inline void AddCard(Node& curr, int next)
+    inline void AddCard(Node& curr, int pos, DirectT direct)
     {
-        AddNeighboor<false>(curr, next);
+        AddNeighboor<false>(curr, pos, direct);
     }
 
-    inline void AddDiag(Node& curr, int next)
+    inline void AddDiag(Node& curr, int pos, DirectT direct)
     {
-        AddNeighboor<true>(curr, next);
+        AddNeighboor<true>(curr, pos, direct);
     }
 
-    static float GetCostEst(int c, int d, int start)
+    static float CostEst(int c, int d, int pos)
     {
-        return c + sqrt2 * d + DistanceToGoal(start);
+        return CostGiven(c, d) + weight * DistanceToGoal(pos);
+    }
+
+    static float CostGiven(int c, int d)
+    {
+        return c + sqrt2 * d;
     }
 
     static float DistanceToGoal(int pos)
     {
-        return Distance_XY(IntToCol(_goal) - IntToCol(pos), IntToRow(_goal) - IntToRow(pos));
+        return Distance_XY(IntToCol(goal) - IntToCol(pos), IntToRow(goal) - IntToRow(pos));
     }
 
     static float Distance_XY(int x, int y)
     {
-        switch (_h)
+        switch (h)
         {
         case Heuristic::OCTILE:
             return Octile(x, y);
