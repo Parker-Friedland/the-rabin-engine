@@ -155,7 +155,7 @@ void PathTester::execute_speed_test()
 
     for (size_t i = 0; i < numIter; ++i)
     {
-        printf("%d", (int)i);
+        //printf("%d", (int)i);
 
         timer.start();
 
