@@ -1,23 +1,7 @@
 #pragma once
 #include "Misc/PathfindingDetails.hpp"
 
-#include <cmath>
-#include <numbers>
-#include <algorithm>
-#include <map>
-#include <set>
-#include <unordered_map>
-#include <unordered_set>
 #include <bitset>
-#include <iostream>
-#include <cstring>
-
-
-#include <pch.h>
-#include <sstream>
-#include "Misc/Stopwatch.h"
-#include <iomanip>
-#include <fstream>
 
 // Don't like that this had to be public and static but it was the ONLY way this would work
 static float weight;
@@ -26,7 +10,9 @@ static int goal;
 static Heuristic h;
 static bool debug;
 
-static bool red = true;
+static int pos;
+
+//static bool red = true;
 
 //static Stopwatch pathtimer;
 
@@ -62,7 +48,7 @@ public:
 
     bool _debugColor;
 
-    typedef std::byte ValidT;
+    typedef std::bitset<8> ValidT;
     typedef int CountT;
     typedef char DirectT;
 
@@ -76,6 +62,7 @@ public:
     static constexpr int diagStart = 4;
     static constexpr int diagEnd = 8;
     static constexpr int numEach = 4;
+    static constexpr int numTot = 8;
     static constexpr int done = 8;
 
     //int _x_comp[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
@@ -83,38 +70,43 @@ public:
 
     struct NodeCore
     {
-        NodeCore() : _c(std::numeric_limits<CountT>::max()), _d(std::numeric_limits<CountT>::max()) {}
-
         NodeCore() : _c(std::numeric_limits<CountT>::max()), _d(std::numeric_limits<CountT>::max())
         {
-            int x = IntToCol(curr._pos);
-            int y = IntToRow(curr._pos);
-
-            bool cardResult[4];
+            int x = IntToCol(pos);
+            int y = IntToRow(pos);
 
             for (DirectT i = cardStart; i < cardEnd; ++i)
             {
                 int col = x + _x_comp[i];
                 int row = y + _y_comp[i];
-                if (cardResult[i] = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col))
-                    AddCard(curr, CoordToInt(row, col), i);
+                _valid.set(i, terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col));
             }
 
             for (DirectT i = diagStart; i < diagEnd; ++i)
             {
-                if (cardResult[i % numEach] && cardResult[(i + 1) % numEach])
+                if (_valid[i % numEach] && _valid[(i + 1) % numEach])
                 {
                     int col = x + _x_comp[i];
                     int row = y + _y_comp[i];
-                    if (!terrain->is_wall(row, col))
-                        AddDiag(curr, CoordToInt(row, col), i);
+                    _valid.set(i, !terrain->is_wall(row, col));
                 }
             }
         }
 
-        NodeCore(CountT c, CountT d) : _c(c), _d(d) {}
+        void Reset()
+        {
+            _c = _d = std::numeric_limits<CountT>::max();
+        }
 
-        NodeCore(const NodeCore& other) : _c(other._c), _d(other._d) {}
+        //NodeCore(CountT c, CountT d) : _c(c), _d(d) {}
+
+        void SetCost(CountT c, CountT d)
+        {
+            _c = c;
+            _d = d;
+        }
+
+        //NodeCore(const NodeCore& other) : _c(other._c), _d(other._d) {}
 
         void SetStart()
         {
@@ -188,6 +180,22 @@ public:
     //static std::chrono::microseconds::rep finishTime;
     void FinishRequest(PathRequest& request);
 
+    void PreProcess()
+    {
+        grid_width = terrain->get_map_width();
+        pos = 0;
+
+        const int size = terrain->get_map_width() * terrain->get_map_height();
+        _allNodes.clear();
+        _allNodes.reserve(size);
+
+        for (int i = 0; i < size; ++i)
+        {
+            _allNodes.emplace_back();
+            ++pos;
+        }
+    }
+
     void Rubberbanding(PathRequest& request);
 
     inline void ColorInit(int start);
@@ -214,12 +222,12 @@ public:
         }
     }
 
-    inline void AddCard(Node& curr, int pos, DirectT direct)
+    void AddCard(Node& curr, int pos, DirectT direct)
     {
         AddNeighboor<false>(curr, pos, direct);
     }
 
-    inline void AddDiag(Node& curr, int pos, DirectT direct)
+    void AddDiag(Node& curr, int pos, DirectT direct)
     {
         AddNeighboor<true>(curr, pos, direct);
     }
@@ -281,27 +289,27 @@ public:
         return Chebyshev(x, y) + (std::sqrtf(2) - 1) * Min(x, y);
     }
 
-    inline static int GridToInt(const GridPos& p)
+    static int GridToInt(const GridPos& p)
     {
         return grid_width * p.row + p.col;
     }
 
-    inline static const GridPos& IntToGrid(int i)
+    static const GridPos& IntToGrid(int i)
     {
         return GridPos{ IntToRow(i), IntToCol(i) };
     }
 
-    inline static int IntToRow(int i)
+    static int IntToRow(int i)
     {
         return i / grid_width;
     }
 
-    inline static int IntToCol(int i)
+    static int IntToCol(int i)
     {
         return i % grid_width;
     }
 
-    inline static int CoordToInt(int r, int c)
+    static int CoordToInt(int r, int c)
     {
         return grid_width * r + c;
     }

@@ -2,14 +2,6 @@
 #include "Projects/ProjectTwo.h"
 #include "P2_Pathfinding.h"
 
-#include <cmath>
-#include <numbers>
-#include <algorithm>
-#include <map>
-#include <set>
-#include <unordered_map>
-#include <unordered_set>
-
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
 {
@@ -43,7 +35,8 @@ bool AStarPather::initialize()
         object that std::function can wrap will suffice.
     */
 
-
+    Callback cb = std::bind(&AStarPather::PreProcess, this);
+    Messenger::listen_for_message(Messages::MAP_CHANGE, cb);
 
     return true; // return false if any errors actually occur, to stop engine initialization
 }
@@ -137,9 +130,11 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
 void AStarPather::InitRequest(const PathRequest& request)
 {
+    //PreProcess();
+
     //auto t1 = pathtimer.now();
 
-    grid_width = terrain->get_map_width();
+    //grid_width = terrain->get_map_width();
     int start = GridToInt(terrain->get_grid_position(request.start));
     goal = GridToInt(terrain->get_grid_position(request.goal));
     debug = request.settings.debugColoring;
@@ -150,8 +145,11 @@ void AStarPather::InitRequest(const PathRequest& request)
         ColorInit(start);
 
     const int size = grid_width * terrain->get_map_height();
-    _allNodes.clear();
     _allNodes.resize(size);
+
+    for (int i = 0; i < size; ++i)
+        _allNodes[i].Reset();
+
     //std::memset(&_allNodes[0], static_cast<int>(NodeCore()), sizeof(_allNodes[0]) * size);
 
     //std::fill(_allNodes.cbegin(), _allNodes.cbegin() + size, unexplored);
@@ -174,24 +172,16 @@ void AStarPather::AddNeighboors(Node& curr)
     int x = IntToCol(curr._pos);
     int y = IntToRow(curr._pos);
 
-    bool cardResult[4];
+    NodeCore& core = _allNodes[curr._pos];
 
-    for (DirectT i = cardStart; i < cardEnd; ++i)
+    for (DirectT i = 0; i < numTot; ++i)
     {
-        int col = x + _x_comp[i];
-        int row = y + _y_comp[i];
-        if(cardResult[i] = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col))
-            AddCard(curr, CoordToInt(row, col), i);
-    }
-
-    for (DirectT i = diagStart; i < diagEnd; ++i)
-    {
-        if (cardResult[i % numEach] && cardResult[(i + 1) % numEach])
+        if (core._valid[i])
         {
-            int col = x + _x_comp[i];
-            int row = y + _y_comp[i];
-            if(!terrain->is_wall(row, col))
-                AddDiag(curr, CoordToInt(row, col), i);
+            if(i < numEach)
+                AddCard(curr, CoordToInt(y + _y_comp[i], x + _x_comp[i]), i);
+            else
+                AddDiag(curr, CoordToInt(y + _y_comp[i], x + _x_comp[i]), i);
         }
     }
 
@@ -226,8 +216,6 @@ void AStarPather::FinishRequest(PathRequest& request)
 
 void AStarPather::Rubberbanding(PathRequest& request)
 {
-    int x, y;
-
     int back = goal;
 
     // incase start and goal are the same node
