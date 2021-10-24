@@ -62,6 +62,7 @@ public:
 
     bool _debugColor;
 
+    typedef std::byte ValidT;
     typedef int CountT;
     typedef char DirectT;
 
@@ -84,6 +85,33 @@ public:
     {
         NodeCore() : _c(std::numeric_limits<CountT>::max()), _d(std::numeric_limits<CountT>::max()) {}
 
+        NodeCore() : _c(std::numeric_limits<CountT>::max()), _d(std::numeric_limits<CountT>::max())
+        {
+            int x = IntToCol(curr._pos);
+            int y = IntToRow(curr._pos);
+
+            bool cardResult[4];
+
+            for (DirectT i = cardStart; i < cardEnd; ++i)
+            {
+                int col = x + _x_comp[i];
+                int row = y + _y_comp[i];
+                if (cardResult[i] = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col))
+                    AddCard(curr, CoordToInt(row, col), i);
+            }
+
+            for (DirectT i = diagStart; i < diagEnd; ++i)
+            {
+                if (cardResult[i % numEach] && cardResult[(i + 1) % numEach])
+                {
+                    int col = x + _x_comp[i];
+                    int row = y + _y_comp[i];
+                    if (!terrain->is_wall(row, col))
+                        AddDiag(curr, CoordToInt(row, col), i);
+                }
+            }
+        }
+
         NodeCore(CountT c, CountT d) : _c(c), _d(d) {}
 
         NodeCore(const NodeCore& other) : _c(other._c), _d(other._d) {}
@@ -97,6 +125,7 @@ public:
 
         NodeCore& operator=(const NodeCore& other) = default;
 
+        ValidT _valid;
         CountT _c; // cardinal
         CountT _d; // diagnal
         DirectT _parent;

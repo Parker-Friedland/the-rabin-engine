@@ -226,6 +226,8 @@ void AStarPather::FinishRequest(PathRequest& request)
 
 void AStarPather::Rubberbanding(PathRequest& request)
 {
+    int x, y;
+
     int back = goal;
 
     // incase start and goal are the same node
