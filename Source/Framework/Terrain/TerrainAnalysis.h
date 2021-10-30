@@ -32,3 +32,5 @@ void normalize_dual_occupancy(MapLayer<float> &layer);
 void enemy_field_of_view(MapLayer<float> &layer, float angle, float closeDistance, float occupancyValue, AStarAgent *enemy);
 bool enemy_find_player(MapLayer<float> &layer, AStarAgent *enemy, Agent *player);
 bool enemy_seek_player(MapLayer<float> &layer, AStarAgent *enemy);
+
+int visibility_num(int r, int c);
