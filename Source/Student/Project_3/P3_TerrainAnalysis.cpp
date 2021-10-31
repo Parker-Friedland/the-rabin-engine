@@ -253,7 +253,19 @@ void normalize_solo_occupancy(MapLayer<float> &layer)
         range of [0, 1].  Negative values should be left unmodified.
     */
 
-    // WRITE YOUR CODE HERE
+    float max = 0;
+
+    for (int r = 0; r < terrain->get_map_height(); ++r)
+        for (int c = 0; c < terrain->get_map_width(); ++c)
+            if (layer.get_value(r, c) > max)
+                max = layer.get_value(r, c);
+
+    if (max == 0)
+        return;
+
+    for (int r = 0; r < terrain->get_map_height(); ++r)
+        for (int c = 0; c < terrain->get_map_width(); ++c)
+            layer.set_value(r, c, layer.get_value(r, c) / max);
 }
 
 void normalize_dual_occupancy(MapLayer<float> &layer)
@@ -267,7 +279,33 @@ void normalize_dual_occupancy(MapLayer<float> &layer)
         (so that it remains a negative number).  This will keep the values in the range of [-1, 1].
     */
 
-    // WRITE YOUR CODE HERE
+    float max = 0;
+    float min = 0;
+
+    for (int r = 0; r < terrain->get_map_height(); ++r)
+        for (int c = 0; c < terrain->get_map_width(); ++c)
+        {
+            float value = layer.get_value(r, c);
+            if (value > max)
+                max = value;
+            else if (value < min)
+                min = value;
+        }
+
+    if (max == 0.f || min == 0.f)
+        return;
+
+    min *= -1;
+
+    for (int r = 0; r < terrain->get_map_height(); ++r)
+        for (int c = 0; c < terrain->get_map_width(); ++c)
+        {
+            float value = layer.get_value(r, c);
+            if (value >= 0.f)
+                layer.set_value(r, c, value / max);
+            else
+                layer.set_value(r, c, value / min);
+        }
 }
 
 void enemy_field_of_view(MapLayer<float> &layer, float fovAngle, float closeDistance, float occupancyValue, AStarAgent *enemy)
