@@ -222,7 +222,8 @@ void propagate_solo_occupancy(MapLayer<float> &layer, float decay, float growth)
 
     for (int r = 0; r < terrain->get_map_height(); ++r)
         for (int c = 0; c < terrain->get_map_width(); ++c)
-            temp[r][c] = calculate_solo_occupancy(layer, r, c, decay);
+            temp[r][c] = terrain->is_wall(r,c) ? 0.f 
+                : calculate_solo_occupancy(layer, r, c, decay);
 
     for (int r = 0; r < terrain->get_map_height(); ++r)
         for (int c = 0; c < terrain->get_map_width(); ++c)
@@ -264,13 +265,13 @@ float calculate_solo_occupancy(const MapLayer<float>& layer, int r, int c, float
 {
     float max = 0.f;
 
-    for (int r_offset = r - 1; r_offset <= r + 1; ++r_offset)
-        for (int c_offset = c - 1; c_offset <= c + 1; ++c_offset)
+    for (int r_offset = -1; r_offset <= 1; ++r_offset)
+        for (int c_offset = -1; c_offset <= 1; ++c_offset)
             if (terrain->is_valid_grid_position(r + r_offset, c + c_offset))
             {
                 float influence = layer.get_value(r + r_offset, c + c_offset)
-                    * std::expf(r_offset * c_offset == 0.f ? decay : decay * std::sqrtf(2));
-                if (influence > max)
+                    * std::expf(r_offset * c_offset == 0 ? decay : decay * std::sqrtf(2));
+                if (influence > max && (r_offset || c_offset))
                     max = influence;
             }
 
