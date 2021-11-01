@@ -22,8 +22,6 @@ float distance_to_closest_wall(int row, int col)
         and a wall, respectively.
     */
 
-    // WRITE YOUR CODE HERE
-
     float closest = std::numeric_limits<float>::max();
 
     for(int r = -1; r <= terrain->get_map_height(); ++r)
@@ -161,8 +159,9 @@ void analyze_visible_to_cell(MapLayer<float> &layer, int row, int col)
                 layer.set_value(r, c, 1.f);
 
                 for (int neighbor_r = r - 1; neighbor_r <= r + 1; ++neighbor_r)
-                    for (int neighbor_c = r - 1; neighbor_c <= r + 1; ++neighbor_c)
-                        if (terrain->is_valid_grid_position(r, c) && layer.get_value(r, c) == 0.f)
+                    for (int neighbor_c = c - 1; neighbor_c <= c + 1; ++neighbor_c)
+                        if (terrain->is_valid_grid_position(neighbor_r, neighbor_c) 
+                            && layer.get_value(neighbor_r, neighbor_c) == 0.f)
                             layer.set_value(r, c, 0.5f);
             }
 }
@@ -221,7 +220,16 @@ void propagate_solo_occupancy(MapLayer<float> &layer, float decay, float growth)
         the given layer;
     */
     
-    // WRITE YOUR CODE HERE
+    float temp[40][40];
+
+    for (int r = 0; r < terrain->get_map_height(); ++r)
+        for (int c = 0; c < terrain->get_map_width(); ++c)
+            temp[r][c] = calculate_solo_occupancy(layer, r, c, decay);
+
+    for (int r = 0; r < terrain->get_map_height(); ++r)
+        for (int c = 0; c < terrain->get_map_width(); ++c)
+            layer.set_value(r, c, 
+                (1.f - growth) * layer.get_value(r, c) + growth * temp[r][c]);
 }
 
 void propagate_dual_occupancy(MapLayer<float> &layer, float decay, float growth)
@@ -242,7 +250,54 @@ void propagate_dual_occupancy(MapLayer<float> &layer, float decay, float growth)
         the given layer;
     */
 
-    // WRITE YOUR CODE HERE
+    float temp[40][40];
+
+    for (int r = 0; r < terrain->get_map_height(); ++r)
+        for (int c = 0; c < terrain->get_map_width(); ++c)
+            temp[r][c] = calculate_dual_occupancy(layer, r, c, decay);
+
+    for (int r = 0; r < terrain->get_map_height(); ++r)
+        for (int c = 0; c < terrain->get_map_width(); ++c)
+            layer.set_value(r, c,
+                (1.f - growth) * layer.get_value(r, c) + growth * temp[r][c]);
+}
+
+float calculate_solo_occupancy(const MapLayer<float>& layer, int r, int c, float decay)
+{
+    float max = 0.f;
+
+    for (int r_offset = r - 1; r_offset <= r + 1; ++r_offset)
+        for (int c_offset = c - 1; c_offset <= c + 1; ++c_offset)
+            if (terrain->is_valid_grid_position(r + r_offset, c + c_offset))
+            {
+                float influence = layer.get_value(r + r_offset, c + c_offset)
+                    * std::expf(r_offset * c_offset == 0.f ? decay : decay * std::sqrtf(2));
+                if (influence > max)
+                    max = influence;
+            }
+
+    return max;
+}
+
+float calculate_dual_occupancy(const MapLayer<float>& layer, int r, int c, float decay)
+{
+    float max = 0.f;
+    bool negative = false;
+
+    for (int r_offset = r - 1; r_offset <= r + 1; ++r_offset)
+        for (int c_offset = c - 1; c_offset <= c + 1; ++c_offset)
+            if (terrain->is_valid_grid_position(r + r_offset, c + c_offset))
+            {
+                float influence = std::abs(layer.get_value(r + r_offset, c + c_offset))
+                    * std::expf(r_offset * c_offset == 0.f ? decay : decay * std::sqrtf(2));
+                if (influence > max)
+                {
+                    max = influence;
+                    negative = layer.get_value(r + r_offset, c + c_offset) < 0.f;
+                }
+            }
+
+    return negative ? -max : max;
 }
 
 void normalize_solo_occupancy(MapLayer<float> &layer)
@@ -365,7 +420,22 @@ bool enemy_seek_player(MapLayer<float> &layer, AStarAgent *enemy)
         Return whether a target cell was found.
     */
 
-    // WRITE YOUR CODE HERE
+    float max = 0.f;
+    int max_r = 0;
+    int max_c = 0;
 
-    return false; // REPLACE THIS
+    for (int r = 0; r < terrain->get_map_height(); ++r)
+        for (int c = 0; c < terrain->get_map_width(); ++c)
+            if (layer.get_value(r, c) > max)
+            {
+                max = layer.get_value(r, c);
+                max_r = r;
+                max_c = c;
+            }
+
+    if (max == 0)
+        return false;
+
+    enemy->path_to(terrain->get_world_position(max_r, max_c));
+    return true;
 }

@@ -34,3 +34,5 @@ bool enemy_find_player(MapLayer<float> &layer, AStarAgent *enemy, Agent *player)
 bool enemy_seek_player(MapLayer<float> &layer, AStarAgent *enemy);
 
 int visibility_num(int r, int c);
+float calculate_solo_occupancy(const MapLayer<float>& layer, int r, int c, float decay);
+float calculate_dual_occupancy(const MapLayer<float>& layer, int r, int c, float decay);
