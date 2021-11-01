@@ -33,7 +33,7 @@ float distance_to_closest_wall(int row, int col)
                     closest = dist;
             }
     
-    return closest; // REPLACE THIS
+    return closest;
 }
 
 float distance(int r, int c)
@@ -52,24 +52,27 @@ bool is_clear_path(int row0, int col0, int row1, int col1)
         function in the global terrain to determine if a cell is a wall or not.
     */
     
-    const Vec2 start = Vec2(row0, col0), stop = Vec2(row1, col1);
+    Vec2 start = { static_cast<float>(col0), static_cast<float>(row0) };
+    Vec2 stop = { static_cast<float>(col1), static_cast<float>(row1) };
     Vec2 topRight, topLeft, botRight, botLeft;
 
-    for (int r = row0; r <= row1; ++r)
+
+
+    for (int r = std::min<int>(row0, row1); r <= std::max<int>(row0, row1); ++r)
     {
         topLeft.y = topRight.y = static_cast<float>(r) + 0.5f;
         botLeft.y = botRight.y = static_cast<float>(r) - 0.5f;
 
-        for (int c = col0; c <= col0; ++c)
+        for (int c = std::min<int>(col0, col1); c <= std::max<int>(col0, col1); ++c)
         {
             topLeft.x = botLeft.x = static_cast<float>(c) + 0.5f;
             topRight.x = botRight.x = static_cast<float>(c) - 0.5f;
 
-            if (terrain->is_wall(r, c)
-                && line_intersect(start, stop, topLeft, topRight)
-                && line_intersect(start, stop, topRight, botRight)
-                && line_intersect(start, stop, botRight, botLeft)
-                && line_intersect(start, stop, botLeft, topLeft))
+            if (terrain->is_wall(r, c) 
+                &&(line_intersect(start, stop, topLeft, topRight)
+                || line_intersect(start, stop, topRight, botRight)
+                || line_intersect(start, stop, botRight, botLeft)
+                || line_intersect(start, stop, botLeft, topLeft)))
             {
                 return false;
             }
@@ -119,16 +122,6 @@ void analyze_visibility(MapLayer<float> &layer)
 
 int visibility_num(int row, int col)
 {
-    /*
-        Mark every cell in the given layer with the number of cells that
-        are visible to it, divided by 160 (a magic number that looks good).  Make sure
-        to cap the value at 1.0 as well.
-
-        Two cells are visible to each other if a line between their centerpoints doesn't
-        intersect the four boundary lines of every wall cell.  Make use of the is_clear_path
-        helper function.
-    */
-
     int num = 0;
 
     for (int r = 0; r < terrain->get_map_height(); ++r)
@@ -165,7 +158,7 @@ void analyze_visible_to_cell(MapLayer<float> &layer, int row, int col)
                     for (int neighbor_c = c - 1; neighbor_c <= c + 1; ++neighbor_c)
                         if (terrain->is_valid_grid_position(neighbor_r, neighbor_c) 
                             && layer.get_value(neighbor_r, neighbor_c) == 0.f)
-                            layer.set_value(r, c, 0.5f);
+                            layer.set_value(neighbor_r, neighbor_c, 0.5f);
             }
 }
 
@@ -200,10 +193,10 @@ void analyze_agent_vision(MapLayer<float> &layer, const Agent *agent)
 
 bool visible_to_agent(const GridPos& pos, const Vec3& forward, float fov, int r, int c)
 {
-    Vec3 to_cell = Vec3(r - pos.row, c - pos.col, 0.f);
+    Vec3 to_cell = { static_cast<float>(r - pos.row), static_cast<float>(c - pos.col), 0.f };
     to_cell.Normalize();
 
-    if (forward.Dot(to_cell) < std::cosf(fov * (std::_Pi / 180.f)))
+    if (forward.Dot(to_cell) < std::cosf(fov * (static_cast<float>(std::_Pi) / 180.f)))
         return false;
 
     return is_clear_path(pos.row, pos.col, r, c);

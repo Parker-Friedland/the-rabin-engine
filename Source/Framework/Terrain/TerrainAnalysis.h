@@ -33,8 +33,12 @@ void enemy_field_of_view(MapLayer<float> &layer, float angle, float closeDistanc
 bool enemy_find_player(MapLayer<float> &layer, AStarAgent *enemy, Agent *player);
 bool enemy_seek_player(MapLayer<float> &layer, AStarAgent *enemy);
 
+float distance(int r, int c);
+
 int visibility_num(int r, int c);
+
 float calculate_solo_occupancy(const MapLayer<float>& layer, int r, int c, float decay);
 float calculate_dual_occupancy(const MapLayer<float>& layer, int r, int c, float decay);
+
 bool visible_to_agent(const GridPos& pos, const Vec3& forward, float fov, int r, int c);
 bool in_enemy_range(const GridPos& pos, const Vec3& forward, float fov, float closeDistance, int r, int c);
