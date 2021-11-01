@@ -185,18 +185,18 @@ void analyze_agent_vision(MapLayer<float> &layer, const Agent *agent)
     const GridPos& pos = terrain->get_grid_position(agent->get_position());
     const Vec3& forward = agent->get_forward_vector();
 
-
     for (int r = 0; r < terrain->get_map_height(); ++r)
         for (int c = 0; c < terrain->get_map_width(); ++c)
-            layer.set_value(r, c, visible_to_agent(pos, forward, 185.f, r, c));
+            if (visible_to_agent(pos, forward, 185.f, r, c))
+                layer.set_value(r, c, 1.f);
 }
 
 bool visible_to_agent(const GridPos& pos, const Vec3& forward, float fov, int r, int c)
 {
-    Vec3 to_cell = { static_cast<float>(r - pos.row), static_cast<float>(c - pos.col), 0.f };
+    Vec3 to_cell = { static_cast<float>(r - pos.row), 0.f, static_cast<float>(c - pos.col) };
     to_cell.Normalize();
 
-    if (forward.Dot(to_cell) < std::cosf(fov * (static_cast<float>(std::_Pi) / 180.f)))
+    if (forward.Dot(to_cell) < std::cosf(fov * (static_cast<float>(std::_Pi) / 360.f)))
         return false;
 
     return is_clear_path(pos.row, pos.col, r, c);
