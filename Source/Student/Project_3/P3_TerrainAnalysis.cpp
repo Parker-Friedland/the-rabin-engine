@@ -28,14 +28,17 @@ float distance_to_closest_wall(int row, int col)
         for(int c = -1; c <= terrain->get_map_width(); ++c)
             if (!terrain->is_valid_grid_position(r, c) || terrain->is_wall(r, c))
             {
-                int x = row - r;
-                int y = col - c;
-                float curr = std::sqrtf(static_cast<float>(x * x) + static_cast<float>(y * y));
-                if (curr < closest)
-                    closest = curr;
+                float dist = distance(row - r, col - c);
+                if (dist < closest)
+                    closest = dist;
             }
     
     return closest; // REPLACE THIS
+}
+
+float distance(int r, int c)
+{
+    return std::sqrtf(static_cast<float>(r * r) + static_cast<float>(c * c));
 }
 
 bool is_clear_path(int row0, int col0, int row1, int col1)
@@ -187,21 +190,23 @@ void analyze_agent_vision(MapLayer<float> &layer, const Agent *agent)
     */
 
     const GridPos& pos = terrain->get_grid_position(agent->get_position());
+    const Vec3& forward = agent->get_forward_vector();
+
 
     for (int r = 0; r < terrain->get_map_height(); ++r)
         for (int c = 0; c < terrain->get_map_width(); ++c)
-        {
-            if (is_clear_path(pos.row, pos.col, r, c))
-            {
-                Vec3 to_cell = Vec3(r - pos.row, c - pos.col, 0.f);
-                to_cell.Normalize();
+            layer.set_value(r, c, visible_to_agent(pos, forward, 185.f, r, c));
+}
 
-                layer.set_value(pos,
-                    agent->get_forward_vector().Dot(to_cell) >= std::cosf(200 / std::_Pi));
-            }
-            else
-                layer.set_value(pos, 0.f);
-        }
+bool visible_to_agent(const GridPos& pos, const Vec3& forward, float fov, int r, int c)
+{
+    Vec3 to_cell = Vec3(r - pos.row, c - pos.col, 0.f);
+    to_cell.Normalize();
+
+    if (forward.Dot(to_cell) < std::cosf(fov * (std::_Pi / 180.f)))
+        return false;
+
+    return is_clear_path(pos.row, pos.col, r, c);
 }
 
 void propagate_solo_occupancy(MapLayer<float> &layer, float decay, float growth)
@@ -380,7 +385,25 @@ void enemy_field_of_view(MapLayer<float> &layer, float fovAngle, float closeDist
         as a fov cone.
     */
 
-    // WRITE YOUR CODE HERE
+    const GridPos& pos = terrain->get_grid_position(enemy->get_position());
+    const Vec3& forward = enemy->get_forward_vector();
+
+    for (int r = 0; r < terrain->get_map_height(); ++r)
+        for (int c = 0; c < terrain->get_map_width(); ++c)
+            if (layer.get_value(r, c) < 0.f)
+                layer.set_value(r, c, 0.f);
+
+    for (int r = 0; r < terrain->get_map_height(); ++r)
+        for (int c = 0; c < terrain->get_map_width(); ++c)
+            if (in_enemy_range(pos, forward, fovAngle, closeDistance, r, c))
+                layer.set_value(r, c, occupancyValue);
+}
+
+bool in_enemy_range(const GridPos& pos, const Vec3& forward, float fov, float closeDistance, int r, int c)
+{
+    return distance(pos.row - r, pos.col - c) < closeDistance
+        ? is_clear_path(pos.row, pos.col, r, c)
+        : visible_to_agent(pos, forward, fov, r, c);
 }
 
 bool enemy_find_player(MapLayer<float> &layer, AStarAgent *enemy, Agent *player)
