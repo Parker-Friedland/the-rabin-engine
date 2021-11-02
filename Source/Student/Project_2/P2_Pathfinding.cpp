@@ -224,7 +224,15 @@ void AStarPather::AddNeighboors(Node& curr)
 void AStarPather::FinishRequest(PathRequest& request)
 {
     if (request.settings.rubberBanding)
+    {
         Rubberbanding(request);
+
+        if (request.settings.smoothing)
+        {
+            AddBackNodes(request.path);
+            return;
+        }
+    }
 
     do
     {
@@ -267,6 +275,33 @@ void AStarPather::Rubberbanding(PathRequest& request)
         mid = front;
         front = _allNodes[mid]._parent;
     }
+}
+
+void AStarPather::AddBackNodes(WaypointList& path)
+{
+    Vec3 last = terrain->get_world_position(IntToRow(_goal), IntToCol(_goal));
+    path.push_front(last);
+    _goal = _allNodes[_goal]._parent;
+
+    do
+    {
+        Vec3 next = terrain->get_world_position(IntToRow(_goal), IntToCol(_goal));
+
+        if (Vec3::Distance(next, last) > 1.5f)
+        {
+            next = (next + last) / 2;
+            while (Vec3::Distance(next, last) > 1.5f)
+            {
+                next = (next + last) / 2;
+            }
+        }
+        else
+        {
+            _goal = _allNodes[_goal]._parent;
+        }
+        path.push_front(last = next);
+
+    } while ((_goal = _allNodes[_goal]._parent) >= 0);
 }
 
 void AStarPather::ColorInit(int start)

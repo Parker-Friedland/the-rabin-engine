@@ -121,6 +121,7 @@ public:
     void InitRequest(const PathRequest& request);
     void FinishRequest(PathRequest& request);
     void Rubberbanding(PathRequest& request);
+    void AddBackNodes(WaypointList& path);
 
     inline void ColorInit(int start);
     inline void ColorOpen(int open);
