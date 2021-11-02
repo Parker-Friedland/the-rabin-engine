@@ -13,7 +13,7 @@
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
 {
-    return false;
+    return true;
 }
 
 bool ProjectTwo::implemented_goal_bounding()
@@ -42,8 +42,6 @@ bool AStarPather::initialize()
         Callback is just a typedef for std::function<void(void)>, so any std::invoke'able
         object that std::function can wrap will suffice.
     */
-
-
 
     return true; // return false if any errors actually occur, to stop engine initialization
 }
@@ -90,25 +88,11 @@ PathResult AStarPather::compute_path(PathRequest &request)
             IMPOSSIBLE - a path from start to goal does not exist, do not add start position to path
     */
 
-    // WRITE YOUR CODE HERE
-
     if (request.newRequest)
     {
         request.newRequest = false;
         InitRequest(request);
     }
-
-    /*if (wait)
-    {
-        int s = 0;
-        for (int i = 0; i < 1000; ++i)
-        {
-            s += i;
-        }
-        wait = s < 69;
-        return PathResult::PROCESSING;
-    }
-    wait = true;*/
 
     while (!_openList.empty())
     {
@@ -128,7 +112,8 @@ PathResult AStarPather::compute_path(PathRequest &request)
             if (_debugColor)
                 ColorClosed(curr._self);
 
-            //return PathResult::PROCESSING;
+            if(request.settings.singleStep)
+                return PathResult::PROCESSING;
         }
     }
 
@@ -279,18 +264,20 @@ void AStarPather::Rubberbanding(PathRequest& request)
 
 void AStarPather::AddBackNodes(WaypointList& path)
 {
+    float max_dist = 1.5f * terrain->mapSizeInWorld / terrain->get_map_width();
+
     Vec3 last = terrain->get_world_position(IntToRow(_goal), IntToCol(_goal));
     path.push_front(last);
     _goal = _allNodes[_goal]._parent;
 
-    do
+    while(_goal >= 0)
     {
         Vec3 next = terrain->get_world_position(IntToRow(_goal), IntToCol(_goal));
 
-        if (Vec3::Distance(next, last) > 1.5f)
+        if (Vec3::Distance(next, last) > max_dist)
         {
             next = (next + last) / 2;
-            while (Vec3::Distance(next, last) > 1.5f)
+            while (Vec3::Distance(next, last) > max_dist)
             {
                 next = (next + last) / 2;
             }
@@ -300,8 +287,7 @@ void AStarPather::AddBackNodes(WaypointList& path)
             _goal = _allNodes[_goal]._parent;
         }
         path.push_front(last = next);
-
-    } while ((_goal = _allNodes[_goal]._parent) >= 0);
+    }
 }
 
 void AStarPather::ColorInit(int start)

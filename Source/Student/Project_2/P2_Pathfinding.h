@@ -115,6 +115,7 @@ public:
 
     QUEUE _openList;
     MAP _allNodes;
+    std::vector<Node> _oracle;
 
     bool wait = false;
 

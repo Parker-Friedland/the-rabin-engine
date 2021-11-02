@@ -77,7 +77,7 @@ void AStarAgent::update(float dt)
 
                 if (buffer.settings.smoothing)
                 {
-                    t += get_movement_speed() * 0.25f * dt / static_cast<float>(terrain->get_map_width());
+                    t += get_movement_speed() * 0.05f * dt / static_cast<float>(terrain->get_map_width());
                     CatmullRomUpdate();
                 }
                 else
@@ -91,7 +91,7 @@ void AStarAgent::update(float dt)
                     else
                     {
                         float lenSq = delta.LengthSquared();
-                        float dist = get_movement_speed() * dt / static_cast<float>(terrain->get_map_width());
+                        float dist = get_movement_speed() * 0.2f * dt / static_cast<float>(terrain->get_map_width());
                         float distSq = dist * dist;
                         const auto movement = distSq > lenSq ? delta : dist * delta / std::sqrt(lenSq);
 

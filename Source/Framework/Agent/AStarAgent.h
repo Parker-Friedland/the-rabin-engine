@@ -138,7 +138,7 @@ protected:
             }
         }
 
-        Vec3 newPos = CatmullRom(*a, *b, *c, *d, t);
+        Vec3 newPos = Vec3::CatmullRom(*a, *b, *c, *d, t);
 
         Vec3 delta = lastPos - newPos;
         const float yaw = std::atan2(delta.x, delta.z);
@@ -147,16 +147,5 @@ protected:
         set_yaw(yaw);
 
         lastPos = newPos;
-    }
-
-    Vec3 CatmullRom(const Vec3& a, const Vec3& b, const Vec3& c, const Vec3& d, float t)
-    {
-        float t2;
-        float t3 = (t2 = t * t) * t;
-
-        return a * (-0.5f * t3 +        t2 - 0.5f * t       )
-             + b * ( 1.5f * t3 - 2.5f * t2            + 1.0f)
-             + c * (-1.5f * t3 + 2.0f * t2 + 0.5f * t       )
-             + d * ( 0.5f * t3 - 0.5f * t2                  );
     }
 };
