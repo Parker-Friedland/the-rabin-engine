@@ -91,18 +91,6 @@ PathResult AStarPather::compute_path(PathRequest &request)
         InitRequest(request);
     }
 
-    /*if (wait)
-    {
-        int s = 0;
-        for (int i = 0; i < 1000; ++i)
-        {
-            s += i;
-        }
-        wait = s < 69;
-        return PathResult::PROCESSING;
-    }
-    wait = true;*/
-
     while (!_openList.empty())
     {
         Node curr = _openList.top();
@@ -130,11 +118,6 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
 void AStarPather::InitRequest(const PathRequest& request)
 {
-    //PreProcess();
-
-    //auto t1 = pathtimer.now();
-
-    //grid_width = terrain->get_map_width();
     int start = GridToInt(terrain->get_grid_position(request.start));
     goal = GridToInt(terrain->get_grid_position(request.goal));
     debug = request.settings.debugColoring;
@@ -150,25 +133,16 @@ void AStarPather::InitRequest(const PathRequest& request)
     for (int i = 0; i < size; ++i)
         _allNodes[i].Reset();
 
-    //std::memset(&_allNodes[0], static_cast<int>(NodeCore()), sizeof(_allNodes[0]) * size);
-
-    //std::fill(_allNodes.cbegin(), _allNodes.cbegin() + size, unexplored);
-
     while (!_openList.empty())
         _openList.pop(); // The priority queue's container is a vector that has a
                          // clear method so I shouldn't have to do this in O(n). 
     _openList.emplace(start);
     //_allNodes.emplace(_allNodes.cbegin() + start);
     _allNodes[start].SetStart();
-
-    //auto t2 = pathtimer.now();
-    //initTime += (t2 - t1).count();
 }
 
 void AStarPather::AddNeighboors(Node& curr)
 {
-    //auto t1 = pathtimer.now();
-
     int x = IntToCol(curr._pos);
     int y = IntToRow(curr._pos);
 
@@ -184,15 +158,10 @@ void AStarPather::AddNeighboors(Node& curr)
                 AddDiag(curr, CoordToInt(y + _y_comp[i], x + _x_comp[i]), i);
         }
     }
-
-    //auto t2 = pathtimer.now();
-    //addTime += (t2 - t1).count();
 }
 
 void AStarPather::FinishRequest(PathRequest& request)
 {
-    //auto t1 = pathtimer.now();
-
     if (request.settings.rubberBanding)
         Rubberbanding(request);
 
@@ -209,9 +178,6 @@ void AStarPather::FinishRequest(PathRequest& request)
         c -= _x_comp[d];
         r -= _y_comp[d];
     }
-
-    //auto t2 = pathtimer.now();
-    //finalTime += (t2 - t1).count();
 }
 
 void AStarPather::Rubberbanding(PathRequest& request)

@@ -9,6 +9,7 @@ static int grid_width;
 static int goal;
 static Heuristic h;
 static bool debug;
+static bool reset_fw;
 
 static int pos;
 
@@ -169,31 +170,66 @@ public:
 
     QUEUE _openList;
     VECTOR _allNodes;
+    std::vector<std::vector<int>> _oracle;
 
-    bool wait = false;
-
-    //Stopwatch mytimer;
-
-    //static std::chrono::microseconds::rep initTime;
     void InitRequest(const PathRequest& request);
-
-    //static std::chrono::microseconds::rep finishTime;
     void FinishRequest(PathRequest& request);
+    void FinishFloyedRequest(PathRequest& request)
+    {
+
+    }
 
     void PreProcess()
     {
         grid_width = terrain->get_map_width();
-        pos = 0;
 
         const int size = terrain->get_map_width() * terrain->get_map_height();
         _allNodes.clear();
         _allNodes.reserve(size);
+        _oracle.resize(size);
+
+        std::vector<std::vector<float>> path =
+            std::vector<std::vector<float>>(size,
+                std::vector<float>(size, std::numeric_limits<int>::max()));
 
         for (int i = 0; i < size; ++i)
         {
             _allNodes.emplace_back();
-            ++pos;
+
+            _oracle[i].resize(size);
+
+            path[i][i] = 0;
+
+            int y = IntToCol(i);
+            int x = IntToRow(i);
+
+            for (DirectT d = 0; d < numTot; ++d)
+            {
+                if (_allNodes[d]._valid[i])
+                {
+                    int j = CoordToInt(y + _y_comp[d], x + _x_comp[d]);
+                    path[i][j] = d < numEach ? 1.f : sqrt2;
+                    _oracle[i][j] = j;
+                }
+            }
         }
+
+        for (int k = 0; k < size; ++k)
+            for (int i = 0; i < size; ++i)
+                for (int j = 0; j < size; ++j)
+                {
+                    float newPath = path[i][k] + path[k][j];
+                    if (newPath < path[i][j])
+                    {
+                        path[i][j] = newPath;
+                        _oracle[i][j] = k;
+                    }
+                }
+    }
+
+    void Floyd(PathRequest& request)
+    {
+
     }
 
     void Rubberbanding(PathRequest& request);
