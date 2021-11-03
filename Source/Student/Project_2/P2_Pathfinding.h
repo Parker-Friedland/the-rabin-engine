@@ -174,9 +174,25 @@ public:
 
     void InitRequest(const PathRequest& request);
     void FinishRequest(PathRequest& request);
+
     void FinishFloyedRequest(PathRequest& request)
     {
+        int start = GridToInt(terrain->get_grid_position(request.start));
 
+        if (request.settings.rubberBanding)
+        {
+            InitRequest(request);
+
+            do
+                _allNodes[start]._parent;
+            while ((start = _oracle[start][goal]) >= 0);
+
+            FinishRequest(request);
+        }
+
+        do
+            request.path.push_front(terrain->get_world_position(IntToRow(goal), IntToCol(goal)));
+        while ((goal = _oracle[goal][start]) >= 0);
     }
 
     void PreProcess()
