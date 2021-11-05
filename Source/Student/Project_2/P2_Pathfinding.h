@@ -11,8 +11,6 @@ static Heuristic h;
 static bool debug;
 static bool reset_fw;
 
-static int pos;
-
 //static bool red = true;
 
 //static Stopwatch pathtimer;
@@ -53,10 +51,10 @@ public:
     typedef int CountT;
     typedef char DirectT;
 
-    static constexpr int _x_comp[8] = { 1,  0, -1,  0,
-                                        1, -1, -1,  1 };
-    static constexpr int _y_comp[8] = { 0,  1,  0, -1,
+    static constexpr int _r_comp[8] = { 0,  1,  0, -1,
                                         1,  1, -1, -1 };
+    static constexpr int _c_comp[8] = { 1,  0, -1,  0,
+                                        1, -1, -1,  1 };
 
     static constexpr int cardStart = 0;
     static constexpr int cardEnd = 4;
@@ -71,15 +69,17 @@ public:
 
     struct NodeCore
     {
-        NodeCore() : _c(std::numeric_limits<CountT>::max()), _d(std::numeric_limits<CountT>::max())
+        NodeCore() : _c(std::numeric_limits<CountT>::max()), _d(std::numeric_limits<CountT>::max()) {}
+
+        void SetSurrondingTerain(int pos)
         {
-            int x = IntToCol(pos);
-            int y = IntToRow(pos);
+            int r = IntToRow(pos);
+            int c = IntToCol(pos);
 
             for (DirectT i = cardStart; i < cardEnd; ++i)
             {
-                int col = x + _x_comp[i];
-                int row = y + _y_comp[i];
+                int row = r + _r_comp[i];
+                int col = c + _c_comp[i];
                 _valid.set(i, terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col));
             }
 
@@ -87,8 +87,8 @@ public:
             {
                 if (_valid[i % numEach] && _valid[(i + 1) % numEach])
                 {
-                    int col = x + _x_comp[i];
-                    int row = y + _y_comp[i];
+                    int row = r + _r_comp[i];
+                    int col = c + _c_comp[i];
                     _valid.set(i, !terrain->is_wall(row, col));
                 }
             }
@@ -174,6 +174,7 @@ public:
 
     void InitRequest(const PathRequest& request);
     void FinishRequest(PathRequest& request);
+    void MakePath(PathRequest& request);
 
     void FinishFloyedRequest(PathRequest& request)
     {
@@ -182,17 +183,83 @@ public:
         if (request.settings.rubberBanding)
         {
             InitRequest(request);
-
-            do
-                _allNodes[start]._parent;
-            while ((start = _oracle[start][goal]) >= 0);
-
-            FinishRequest(request);
+            FloydCopy(start);
+            MakePath(request);
         }
 
+        MakeFloydPath(request, start);
+    }
+
+    void MakeFloydPath(PathRequest& request, int start)
+    {
         do
             request.path.push_front(terrain->get_world_position(IntToRow(goal), IntToCol(goal)));
         while ((goal = _oracle[goal][start]) >= 0);
+    }
+
+    void FloydCopy(int start)
+    {
+        do
+            _allNodes[start]._parent = Direction(start, goal);
+        while ((start = _oracle[start][goal]) >= 0);
+    }
+
+    int Direction(int child, int parent)
+    {
+        const int L = 0;
+        const int LU = 1;
+        const int U = 2;
+        const int RU = 3;
+        const int R = 4;
+        const int RD = 5;
+        const int D = 6;
+        const int LD = 7;
+        const int error = -1;
+
+        int r = IntToRow(parent) - IntToRow(child);
+        int c = IntToCol(parent) - IntToCol(child);
+
+        switch (r)
+        {
+        case -1:
+            switch (c)
+            {
+            case -1:
+                return RD;
+            case 0:
+                return D;
+            case 1:
+                return LD;
+            default:
+                return error;
+            }
+        case 0:
+            switch (c)
+            {
+            case -1:
+                return R;
+            case 0:
+                return done;
+            case 1:
+                return L;
+            default:
+                return error;
+            }
+        case 1:
+            switch (c)
+            {
+            case -1:
+                return RU;
+            case 0:
+                return U;
+            case 1:
+                return LU;
+            default:
+                return error;
+            }
+        default:
+            return error;
+        }
     }
 
     void PreProcess()
@@ -206,24 +273,25 @@ public:
 
         std::vector<std::vector<float>> path =
             std::vector<std::vector<float>>(size,
-                std::vector<float>(size, std::numeric_limits<int>::max()));
+                std::vector<float>(size, std::numeric_limits<float>::max()));
 
         for (int i = 0; i < size; ++i)
         {
             _allNodes.emplace_back();
+            _allNodes[i].SetSurrondingTerain(i);
 
             _oracle[i].resize(size);
 
             path[i][i] = 0;
 
-            int y = IntToCol(i);
-            int x = IntToRow(i);
+            int r = IntToRow(i);
+            int c = IntToCol(i);
 
             for (DirectT d = 0; d < numTot; ++d)
             {
-                if (_allNodes[d]._valid[i])
+                if (_allNodes[i]._valid[d])
                 {
-                    int j = CoordToInt(y + _y_comp[d], x + _x_comp[d]);
+                    int j = CoordToInt(r + _r_comp[d], c + _c_comp[d]);
                     path[i][j] = d < numEach ? 1.f : sqrt2;
                     _oracle[i][j] = j;
                 }
@@ -364,5 +432,17 @@ public:
     static int CoordToInt(int r, int c)
     {
         return grid_width * r + c;
+    }
+
+    int GetParentNode(int child)
+    {
+        int direction = _allNodes[child]._parent;
+
+        return CoordToInt(IntToRow(child) - _r_comp[child], IntToCol(child) - _c_comp[child]);
+    }
+
+    void SetParentNode(int child, int parent)
+    {
+        _allNodes[child]._parent = Direction(child, parent);
     }
 };

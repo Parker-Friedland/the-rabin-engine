@@ -5,7 +5,7 @@
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
 {
-    return false;
+    return true;
 }
 
 bool ProjectTwo::implemented_goal_bounding()
@@ -143,8 +143,8 @@ void AStarPather::InitRequest(const PathRequest& request)
 
 void AStarPather::AddNeighboors(Node& curr)
 {
-    int x = IntToCol(curr._pos);
-    int y = IntToRow(curr._pos);
+    int r = IntToRow(curr._pos);
+    int c = IntToCol(curr._pos);
 
     NodeCore& core = _allNodes[curr._pos];
 
@@ -153,9 +153,9 @@ void AStarPather::AddNeighboors(Node& curr)
         if (core._valid[i])
         {
             if(i < numEach)
-                AddCard(curr, CoordToInt(y + _y_comp[i], x + _x_comp[i]), i);
+                AddCard(curr, CoordToInt(r + _r_comp[i], c + _c_comp[i]), i);
             else
-                AddDiag(curr, CoordToInt(y + _y_comp[i], x + _x_comp[i]), i);
+                AddDiag(curr, CoordToInt(r + _r_comp[i], c + _c_comp[i]), i);
         }
     }
 }
@@ -165,18 +165,23 @@ void AStarPather::FinishRequest(PathRequest& request)
     if (request.settings.rubberBanding)
         Rubberbanding(request);
 
+    MakePath(request);
+}
+
+void AStarPather::MakePath(PathRequest& request)
+{
     int r = IntToRow(goal);
     int c = IntToCol(goal);
     char d;
 
-    while(true)
+    while (true)
     {
         request.path.push_front(terrain->get_world_position(r, c));
-        d = _allNodes[CoordToInt(r,c)]._parent;
+        d = _allNodes[CoordToInt(r, c)]._parent;
         if (d == done)
             break;
-        c -= _x_comp[d];
-        r -= _y_comp[d];
+        r -= _r_comp[d];
+        c -= _c_comp[d];
     }
 }
 
@@ -185,11 +190,11 @@ void AStarPather::Rubberbanding(PathRequest& request)
     int back = goal;
 
     // incase start and goal are the same node
-    int mid = _allNodes[back]._parent;
+    int mid = GetParentNode(back);
     if (mid < 0)
        return;
 
-    int front = _allNodes[mid]._parent;
+    int front = GetParentNode(mid);
 
     while (front >= 0)
     {
@@ -208,12 +213,12 @@ void AStarPather::Rubberbanding(PathRequest& request)
                 }
 
         if (skip)
-            _allNodes[back]._parent = front;
+            SetParentNode(back, front);
         else
             back = mid;
 
         mid = front;
-        front = _allNodes[mid]._parent;
+        front = GetParentNode(mid);
     }
 }
 
