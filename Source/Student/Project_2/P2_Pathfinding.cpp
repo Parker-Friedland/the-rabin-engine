@@ -153,9 +153,9 @@ void AStarPather::AddNeighboors(Node& curr)
         if (core._valid[i])
         {
             if(i < numEach)
-                AddCard(curr, CoordToInt(r + _r_comp[i], c + _c_comp[i]), i);
+                AddCard(curr, CoordToInt(r + _r_comp[i], c + _c_comp[i]), curr._pos);
             else
-                AddDiag(curr, CoordToInt(r + _r_comp[i], c + _c_comp[i]), i);
+                AddDiag(curr, CoordToInt(r + _r_comp[i], c + _c_comp[i]), curr._pos);
         }
     }
 }
@@ -163,38 +163,29 @@ void AStarPather::AddNeighboors(Node& curr)
 void AStarPather::FinishRequest(PathRequest& request)
 {
     if (request.settings.rubberBanding)
-        Rubberbanding(request);
+        Rubberbanding();
 
     MakePath(request);
 }
 
 void AStarPather::MakePath(PathRequest& request)
 {
-    int r = IntToRow(goal);
-    int c = IntToCol(goal);
-    char d;
-
-    while (true)
+    do
     {
-        request.path.push_front(terrain->get_world_position(r, c));
-        d = _allNodes[CoordToInt(r, c)]._parent;
-        if (d == done)
-            break;
-        r -= _r_comp[d];
-        c -= _c_comp[d];
-    }
+        request.path.push_front(terrain->get_world_position(IntToRow(goal), IntToCol(goal)));
+    } while ((goal = _allNodes[goal]._parent) >= 0);
 }
 
-void AStarPather::Rubberbanding(PathRequest& request)
+void AStarPather::Rubberbanding()
 {
     int back = goal;
 
     // incase start and goal are the same node
-    int mid = GetParentNode(back);
+    int mid = _allNodes[back]._parent;
     if (mid < 0)
-       return;
+        return;
 
-    int front = GetParentNode(mid);
+    int front = _allNodes[mid]._parent;
 
     while (front >= 0)
     {
@@ -213,12 +204,12 @@ void AStarPather::Rubberbanding(PathRequest& request)
                 }
 
         if (skip)
-            SetParentNode(back, front);
+            _allNodes[back]._parent = front;
         else
             back = mid;
 
         mid = front;
-        front = GetParentNode(mid);
+        front = _allNodes[mid]._parent;
     }
 }
 

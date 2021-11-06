@@ -56,13 +56,13 @@ public:
     static constexpr int _c_comp[8] = { 1,  0, -1,  0,
                                         1, -1, -1,  1 };
 
-    static constexpr int cardStart = 0;
-    static constexpr int cardEnd = 4;
-    static constexpr int diagStart = 4;
-    static constexpr int diagEnd = 8;
-    static constexpr int numEach = 4;
-    static constexpr int numTot = 8;
-    static constexpr int done = 8;
+    static constexpr DirectT cardStart = 0;
+    static constexpr DirectT cardEnd = 4;
+    static constexpr DirectT diagStart = 4;
+    static constexpr DirectT diagEnd = 8;
+    static constexpr DirectT numEach = 4;
+    static constexpr DirectT numTot = 8;
+    static constexpr DirectT done = 8;
 
     //int _x_comp[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
     //int _y_comp[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
@@ -113,7 +113,7 @@ public:
         {
             _c = 0;
             _d = 0;
-            _parent = done;
+            _parent = -1;
         }
 
         NodeCore& operator=(const NodeCore& other) = default;
@@ -121,7 +121,8 @@ public:
         ValidT _valid;
         CountT _c; // cardinal
         CountT _d; // diagnal
-        DirectT _parent;
+        //DirectT _parent;
+        int _parent;
     };
 
     //NodeCore unexplored = { std::numeric_limits<CountT>::max(), std::numeric_limits<CountT>::max() };
@@ -168,6 +169,8 @@ public:
 
     typedef std::priority_queue<Node, std::vector<Node>, std::greater<Node>> QUEUE;
 
+    typedef std::vector<int> PATH;
+
     QUEUE _openList;
     VECTOR _allNodes;
     std::vector<std::vector<int>> _oracle;
@@ -199,9 +202,12 @@ public:
 
     void FloydCopy(int start)
     {
-        do
-            _allNodes[start]._parent = Direction(start, goal);
-        while ((start = _oracle[start][goal]) >= 0);
+        int next;
+
+        while((next = _oracle[start][goal]) != goal)
+        {
+            start = _allNodes[start]._parent = next;
+        }
     }
 
     int Direction(int child, int parent)
@@ -269,6 +275,18 @@ public:
         const int size = terrain->get_map_width() * terrain->get_map_height();
         _allNodes.clear();
         _allNodes.reserve(size);
+
+        if (true)
+        {
+            for (int i = 0; i < size; ++i)
+            {
+                _allNodes.emplace_back();
+                _allNodes[i].SetSurrondingTerain(i);
+            }
+
+            return;
+        }
+
         _oracle.resize(size);
 
         std::vector<std::vector<float>> path =
@@ -316,7 +334,7 @@ public:
 
     }
 
-    void Rubberbanding(PathRequest& request);
+    void Rubberbanding();
 
     inline void ColorInit(int start);
     inline void ColorOpen(int open);
@@ -326,7 +344,7 @@ public:
     void AddNeighboors(Node& curr);
 
     template <bool diag>
-    void AddNeighboor(Node &curr, int pos, DirectT direct)
+    void AddNeighboor(Node &curr, int pos, int parent)
     {
         NodeCore& core = _allNodes[pos];
 
@@ -334,7 +352,7 @@ public:
         {
             core._c = curr._c + !diag;
             core._d = curr._d +  diag;
-            core._parent = direct;
+            core._parent = parent;
             _openList.emplace(pos, core._c, core._d);
 
             if (debug)
@@ -342,14 +360,14 @@ public:
         }
     }
 
-    void AddCard(Node& curr, int pos, DirectT direct)
+    void AddCard(Node& curr, int pos, int parent)
     {
-        AddNeighboor<false>(curr, pos, direct);
+        AddNeighboor<false>(curr, pos, parent);
     }
 
-    void AddDiag(Node& curr, int pos, DirectT direct)
+    void AddDiag(Node& curr, int pos, int parent)
     {
-        AddNeighboor<true>(curr, pos, direct);
+        AddNeighboor<true>(curr, pos, parent);
     }
 
     static float CostEst(int c, int d, int pos)
@@ -432,17 +450,5 @@ public:
     static int CoordToInt(int r, int c)
     {
         return grid_width * r + c;
-    }
-
-    int GetParentNode(int child)
-    {
-        int direction = _allNodes[child]._parent;
-
-        return CoordToInt(IntToRow(child) - _r_comp[child], IntToCol(child) - _c_comp[child]);
-    }
-
-    void SetParentNode(int child, int parent)
-    {
-        _allNodes[child]._parent = Direction(child, parent);
     }
 };
