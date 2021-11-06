@@ -85,6 +85,11 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
     // WRITE YOUR CODE HERE
 
+    if (request.settings.method == Method::FLOYD_WARSHALL)
+    {
+        return Floyd(request);
+    }
+
     if (request.newRequest)
     {
         request.newRequest = false;

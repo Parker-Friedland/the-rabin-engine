@@ -68,7 +68,9 @@ public:
     const std::wstring &get_method_text();
 
     void toggle_debug_coloring();
+    void toggle_floyd();
     bool get_debug_coloring();
+    bool get_floyd();
     void set_debug_coloring(bool state);
 
     virtual void draw_debug() override final;

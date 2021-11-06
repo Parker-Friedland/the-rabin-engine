@@ -15,6 +15,7 @@ written consent of DigiPen Institute of Technology is prohibited.
 #include "AStarAgent.h"
 #include <sstream>
 #include "Projects/ProjectTwo.h"
+#include "../Source/Student/Project_2/P2_Pathfinding.h"
 
 
 const char *AStarAgent::patherTypeName("A* Agent");
@@ -281,9 +282,20 @@ void AStarAgent::toggle_debug_coloring()
     set_debug_coloring(!buffer.settings.debugColoring);
 }
 
+void AStarAgent::toggle_floyd()
+{
+    pather->ToggleFloyd();
+    buffer.settings.method = floyd ? Method::FLOYD_WARSHALL : Method::ASTAR;
+}
+
 bool AStarAgent::get_debug_coloring()
 {
     return buffer.settings.debugColoring;
+}
+
+bool AStarAgent::get_floyd()
+{
+    return floyd;
 }
 
 void AStarAgent::set_debug_coloring(bool state)

@@ -1,6 +1,8 @@
 #pragma once
 #include "Misc/PathfindingDetails.hpp"
 
+#include "Agent/AStarAgent.h"
+
 #include <bitset>
 
 // Don't like that this had to be public and static but it was the ONLY way this would work
@@ -10,6 +12,8 @@ static int goal;
 static Heuristic h;
 static bool debug;
 static bool reset_fw;
+
+static bool floyd = false;
 
 //static bool red = true;
 
@@ -179,9 +183,12 @@ public:
     void FinishRequest(PathRequest& request);
     void MakePath(PathRequest& request);
 
-    void FinishFloyedRequest(PathRequest& request)
+    PathResult Floyd(PathRequest& request)
     {
         int start = GridToInt(terrain->get_grid_position(request.start));
+
+        if (_oracle[start][goal] == -1)
+            return PathResult::IMPOSSIBLE;
 
         if (request.settings.rubberBanding)
         {
@@ -191,6 +198,8 @@ public:
         }
 
         MakeFloydPath(request, start);
+
+        return PathResult::COMPLETE;
     }
 
     void MakeFloydPath(PathRequest& request, int start)
@@ -206,8 +215,11 @@ public:
 
         while((next = _oracle[start][goal]) != goal)
         {
-            start = _allNodes[start]._parent = next;
+            _allNodes[start]._parent = next;
+            start = next;
         }
+
+        _allNodes[start]._parent = goal;
     }
 
     int Direction(int child, int parent)
@@ -276,7 +288,7 @@ public:
         _allNodes.clear();
         _allNodes.reserve(size);
 
-        if (true)
+        if (!floyd)
         {
             for (int i = 0; i < size; ++i)
             {
@@ -299,6 +311,9 @@ public:
             _allNodes[i].SetSurrondingTerain(i);
 
             _oracle[i].resize(size);
+
+            for (int j = 0; j < size; ++j)
+                _oracle[i][j] = -1;
 
             path[i][i] = 0;
 
@@ -329,12 +344,20 @@ public:
                 }
     }
 
-    void Floyd(PathRequest& request)
-    {
+    void Rubberbanding();
 
+    void ToggleFloyd()
+    {
+        floyd = !floyd;
+
+        if (floyd)
+            PreProcess();
     }
 
-    void Rubberbanding();
+    bool GetFloyd()
+    {
+        return floyd;
+    }
 
     inline void ColorInit(int start);
     inline void ColorOpen(int open);
