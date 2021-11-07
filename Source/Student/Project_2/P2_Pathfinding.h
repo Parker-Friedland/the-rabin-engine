@@ -206,7 +206,7 @@ public:
 
         std::vector<std::vector<float>> path =
             std::vector<std::vector<float>>(size,
-                std::vector<float>(size, std::numeric_limits<int>::max()));
+                std::vector<float>(size, std::numeric_limits<float>::max()));
 
         for (int i = 0; i < size; ++i)
         {
@@ -221,7 +221,7 @@ public:
 
             for (DirectT d = 0; d < numTot; ++d)
             {
-                if (_allNodes[d]._valid[i])
+                if (_allNodes[i]._valid[d])
                 {
                     int j = CoordToInt(y + _y_comp[d], x + _x_comp[d]);
                     path[i][j] = d < numEach ? 1.f : sqrt2;
