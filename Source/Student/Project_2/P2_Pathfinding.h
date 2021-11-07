@@ -1,7 +1,7 @@
 #pragma once
 #include "Misc/PathfindingDetails.hpp"
 
-#include "Agent/AStarAgent.h"
+//#include "Agent/AStarAgent.h"
 
 #include <bitset>
 
@@ -13,7 +13,7 @@ static Heuristic h;
 static bool debug;
 static bool reset_fw;
 
-static bool floyd = false;
+//static bool floyd = false;
 
 //static bool red = true;
 
@@ -288,7 +288,7 @@ public:
         _allNodes.clear();
         _allNodes.reserve(size);
 
-        if (!floyd)
+        if (true)
         {
             for (int i = 0; i < size; ++i)
             {
@@ -348,15 +348,15 @@ public:
 
     void ToggleFloyd()
     {
-        floyd = !floyd;
+        //floyd = !floyd;
 
-        if (floyd)
-            PreProcess();
+        //if (floyd)
+        //    PreProcess();
     }
 
     bool GetFloyd()
     {
-        return floyd;
+        return false;
     }
 
     inline void ColorInit(int start);
