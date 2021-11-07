@@ -11,17 +11,6 @@ static int grid_width;
 static int goal;
 static Heuristic h;
 static bool debug;
-static bool reset_fw;
-
-//static bool floyd = false;
-
-//static bool red = true;
-
-//static Stopwatch pathtimer;
-
-//static std::chrono::nanoseconds::rep initTime;
-//static std::chrono::nanoseconds::rep addTime;
-//static std::chrono::nanoseconds::rep finalTime;
 
 static const float sqrt2 = std::sqrtf(2);
 
@@ -68,9 +57,6 @@ public:
     static constexpr DirectT numTot = 8;
     static constexpr DirectT done = 8;
 
-    //int _x_comp[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
-    //int _y_comp[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
-
     struct NodeCore
     {
         NodeCore() : _c(std::numeric_limits<CountT>::max()), _d(std::numeric_limits<CountT>::max()) {}
@@ -103,15 +89,11 @@ public:
             _c = _d = std::numeric_limits<CountT>::max();
         }
 
-        //NodeCore(CountT c, CountT d) : _c(c), _d(d) {}
-
         void SetCost(CountT c, CountT d)
         {
             _c = c;
             _d = d;
         }
-
-        //NodeCore(const NodeCore& other) : _c(other._c), _d(other._d) {}
 
         void SetStart()
         {
@@ -128,8 +110,6 @@ public:
         //DirectT _parent;
         int _parent;
     };
-
-    //NodeCore unexplored = { std::numeric_limits<CountT>::max(), std::numeric_limits<CountT>::max() };
 
     typedef std::vector<NodeCore> VECTOR;
 
@@ -185,6 +165,7 @@ public:
 
     PathResult Floyd(PathRequest& request)
     {
+        goal = GridToInt(terrain->get_grid_position(request.goal));
         int start = GridToInt(terrain->get_grid_position(request.start));
 
         if (_oracle[start][goal] == -1)
@@ -196,8 +177,8 @@ public:
             FloydCopy(start);
             MakePath(request);
         }
-
-        MakeFloydPath(request, start);
+        else
+            MakeFloydPath(request, start);
 
         return PathResult::COMPLETE;
     }
@@ -215,11 +196,11 @@ public:
 
         while((next = _oracle[start][goal]) != goal)
         {
-            _allNodes[start]._parent = next;
+            _allNodes[next]._parent = start;
             start = next;
         }
 
-        _allNodes[start]._parent = goal;
+        _allNodes[next]._parent = start;
     }
 
     int Direction(int child, int parent)
@@ -280,6 +261,47 @@ public:
         }
     }
 
+    struct Cost
+    {
+        Cost() :
+            _c(std::numeric_limits<CountT>::max()),
+            _d(std::numeric_limits<CountT>::max())
+        {}
+
+        void SetToC()
+        {
+            _c = 1;
+            _d = 0;
+        }
+
+        void SetToD()
+        {
+            _c = 0;
+            _d = 1;
+        }
+
+        void SetTo0()
+        {
+            _c = 0;
+            _d = 0;
+        }
+
+        CountT _c;
+        CountT _d;
+
+        bool operator>(const Node& rhs) const
+        {
+            return static_cast<float>(    _c) + sqrt2 * static_cast<float>(    _d)
+                 > static_cast<float>(rhs._c) + sqrt2 * static_cast<float>(rhs._d);
+        }
+
+        bool operator<(const Node& rhs) const
+        {
+            return static_cast<float>(    _c) + sqrt2 * static_cast<float>(    _d)
+                 < static_cast<float>(rhs._c) + sqrt2 * static_cast<float>(rhs._d);
+        }
+    };
+
     void PreProcess()
     {
         grid_width = terrain->get_map_width();
@@ -288,22 +310,16 @@ public:
         _allNodes.clear();
         _allNodes.reserve(size);
 
-        if (true)
-        {
-            for (int i = 0; i < size; ++i)
-            {
-                _allNodes.emplace_back();
-                _allNodes[i].SetSurrondingTerain(i);
-            }
-
-            return;
-        }
-
+        _oracle.clear();
         _oracle.resize(size);
 
-        std::vector<std::vector<float>> path =
+        /*std::vector<std::vector<float>> path =
             std::vector<std::vector<float>>(size,
-                std::vector<float>(size, std::numeric_limits<float>::max()));
+                std::vector<float>(size, std::numeric_limits<float>::max()));*/
+
+        std::vector<std::vector<Cost>> path =
+            std::vector<std::vector<Cost>>(size,
+                std::vector<Cost>(size, Cost()));
 
         for (int i = 0; i < size; ++i)
         {
@@ -342,28 +358,25 @@ public:
                         _oracle[i][j] = k;
                     }
                 }
+
+        for (int k = 0; k < size; ++k)
+            for (int i = 0; i < size; ++i)
+                for (int j = 0; j < size; ++j)
+                {
+                    float newPath = path[i][k] + path[k][j];
+                    if (newPath < path[i][j])
+                    {
+                        bool debug = true;
+                    }
+                }
     }
 
     void Rubberbanding();
-
-    void ToggleFloyd()
-    {
-        //floyd = !floyd;
-
-        //if (floyd)
-        //    PreProcess();
-    }
-
-    bool GetFloyd()
-    {
-        return false;
-    }
 
     inline void ColorInit(int start);
     inline void ColorOpen(int open);
     inline void ColorClosed(int closed);
 
-    //static std::chrono::microseconds::rep addTime;
     void AddNeighboors(Node& curr);
 
     template <bool diag>

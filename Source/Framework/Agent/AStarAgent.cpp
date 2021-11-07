@@ -284,8 +284,7 @@ void AStarAgent::toggle_debug_coloring()
 
 void AStarAgent::toggle_floyd()
 {
-    //pather->ToggleFloyd();
-    //buffer.settings.method = floyd ? Method::FLOYD_WARSHALL : Method::ASTAR;
+    buffer.settings.method = get_floyd() ? Method::ASTAR : Method::FLOYD_WARSHALL;
 }
 
 bool AStarAgent::get_debug_coloring()
@@ -295,7 +294,7 @@ bool AStarAgent::get_debug_coloring()
 
 bool AStarAgent::get_floyd()
 {
-    return false;
+    return buffer.settings.method == Method::FLOYD_WARSHALL;
 }
 
 void AStarAgent::set_debug_coloring(bool state)
