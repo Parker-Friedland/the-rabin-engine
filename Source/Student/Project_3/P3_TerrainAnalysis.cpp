@@ -5,6 +5,8 @@
 #include "Terrain/MapLayer.h"
 #include "Projects/ProjectThree.h"
 
+//#include "../Student/Project_2/P2_Pathfinding.h"
+
 #include <iostream>
 
 bool ProjectThree::implemented_fog_of_war() const // extra credit
@@ -154,11 +156,16 @@ void analyze_visible_to_cell(MapLayer<float> &layer, int row, int col)
             {
                 layer.set_value(r, c, 1.f);
 
-                for (int neighbor_r = r - 1; neighbor_r <= r + 1; ++neighbor_r)
-                    for (int neighbor_c = c - 1; neighbor_c <= c + 1; ++neighbor_c)
-                        if (terrain->is_valid_grid_position(neighbor_r, neighbor_c) 
-                            && layer.get_value(neighbor_r, neighbor_c) == 0.f)
+                for (AStarPather::DirectT d = 0; d < AStarPather::numTot; ++d)
+                    if (d < AStarPather::numEach || 
+                        pather->_allNodes[AStarPather::CoordToInt(r, c)]._valid[d])
+                    {
+                        int neighbor_r = r + AStarPather::_r_comp[d];
+                        int neighbor_c = c + AStarPather::_c_comp[d];
+
+                        if(layer.get_value(neighbor_r, neighbor_c) == 0.f)
                             layer.set_value(neighbor_r, neighbor_c, 0.5f);
+                    }
             }
 }
 
@@ -265,15 +272,18 @@ float calculate_solo_occupancy(const MapLayer<float>& layer, int r, int c, float
 {
     float max = 0.f;
 
-    for (int r_offset = -1; r_offset <= 1; ++r_offset)
-        for (int c_offset = -1; c_offset <= 1; ++c_offset)
-            if (terrain->is_valid_grid_position(r + r_offset, c + c_offset))
-            {
-                float influence = layer.get_value(r + r_offset, c + c_offset)
-                    * std::expf(r_offset * c_offset == 0 ? decay : decay * std::sqrtf(2));
-                if (influence > max && (r_offset || c_offset))
-                    max = influence;
-            }
+    for (AStarPather::DirectT d = 0; d < AStarPather::numTot; ++d)
+        if (pather->_allNodes[AStarPather::CoordToInt(r, c)]._valid[d])
+        {
+            int r_offset = AStarPather::_r_comp[d];
+            int c_offset = AStarPather::_c_comp[d];
+
+            float influence = layer.get_value(r + r_offset, c + c_offset)
+                * std::expf(d < AStarPather::numEach ? decay : decay * std::sqrtf(2));
+
+            if (influence > max)
+                max = influence;
+        }
 
     return max;
 }
@@ -281,22 +291,21 @@ float calculate_solo_occupancy(const MapLayer<float>& layer, int r, int c, float
 float calculate_dual_occupancy(const MapLayer<float>& layer, int r, int c, float decay)
 {
     float max = 0.f;
-    bool negative = false;
 
-    for (int r_offset = r - 1; r_offset <= r + 1; ++r_offset)
-        for (int c_offset = c - 1; c_offset <= c + 1; ++c_offset)
-            if (terrain->is_valid_grid_position(r + r_offset, c + c_offset))
-            {
-                float influence = std::abs(layer.get_value(r + r_offset, c + c_offset))
-                    * std::expf(r_offset * c_offset == 0.f ? decay : decay * std::sqrtf(2));
-                if (influence > max)
-                {
-                    max = influence;
-                    negative = layer.get_value(r + r_offset, c + c_offset) < 0.f;
-                }
-            }
+    for (AStarPather::DirectT d = 0; d < AStarPather::numTot; ++d)
+        if (pather->_allNodes[AStarPather::CoordToInt(r, c)]._valid[d])
+        {
+            int r_offset = AStarPather::_r_comp[d];
+            int c_offset = AStarPather::_c_comp[d];
 
-    return negative ? -max : max;
+            float influence = layer.get_value(r + r_offset, c + c_offset)
+                * std::expf(d < AStarPather::numEach ? decay : decay * std::sqrtf(2));
+
+            if (std::abs(influence) > std::abs(max))
+                max = influence;
+        }
+
+    return max;
 }
 
 void normalize_solo_occupancy(MapLayer<float> &layer)

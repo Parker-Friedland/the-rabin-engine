@@ -37,7 +37,7 @@ bool Engine::initialize(HINSTANCE hInstance, int nCmdShow)
 
     renderer = std::make_unique<SimpleRenderer>();
 
-    projectType = Project::Type::TWO;
+    projectType = Project::Type::THREE;
 
     //timer.SetFixedTimeStep(true);
     //timer.SetTargetElapsedSeconds(1.0 / 60);
