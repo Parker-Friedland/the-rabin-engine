@@ -311,6 +311,16 @@ void AStarAgent::draw_debug()
     }
 }
 
+void AStarAgent::toggle_floyd()
+{
+    buffer.settings.method = get_floyd() ? Method::ASTAR : Method::FLOYD_WARSHALL;
+}
+
+bool AStarAgent::get_floyd()
+{
+    return buffer.settings.method == Method::FLOYD_WARSHALL;
+}
+
 const PathRequest &AStarAgent::get_request_data() const
 {
     return request;

@@ -16,7 +16,7 @@ written consent of DigiPen Institute of Technology is prohibited.
 
 #include "Terrain/TerrainAnalysis.h"
 #include "Agent/CameraAgent.h"
-#include "../Student/Project_2/P2_Pathfinding.h"
+//#include "../Student/Project_2/P2_Pathfinding.h"
 
 #include "UI/Elements/Buttons/UIButton.h"
 #include "UI/Elements/Sliders/UISlider.h"

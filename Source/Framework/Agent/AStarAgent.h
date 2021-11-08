@@ -73,6 +73,9 @@ public:
 
     virtual void draw_debug() override final;
 
+    void toggle_floyd();
+    bool get_floyd();
+
     const PathRequest &get_request_data() const;
     void bulk_set_request_settings(const PathRequest::Settings &setting);
 
