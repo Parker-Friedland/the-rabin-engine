@@ -260,7 +260,6 @@
     <ClInclude Include="Source\Student\Project_1\Leaf\L_MoveToMouseClick.h" />
     <ClInclude Include="Source\Student\Project_1\Leaf\L_MoveToRandomPosition.h" />
     <ClInclude Include="Source\Student\Project_1\NodeHeaders.h" />
-    <ClInclude Include="Source\Student\Project_2\GoalBounding.h" />
     <ClInclude Include="Source\Student\Project_2\P2_Pathfinding.h" />
   </ItemGroup>
   <ItemGroup>
