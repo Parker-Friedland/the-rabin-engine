@@ -1,14 +1,6 @@
 #include <pch.h>
 #include "Projects/ProjectTwo.h"
-#include "P2_Pathfinding.h"
-
-#include <cmath>
-#include <numbers>
-#include <algorithm>
-#include <map>
-#include <set>
-#include <unordered_map>
-#include <unordered_set>
+//#include "P2_Pathfinding.h"
 
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
@@ -42,6 +34,9 @@ bool AStarPather::initialize()
         Callback is just a typedef for std::function<void(void)>, so any std::invoke'able
         object that std::function can wrap will suffice.
     */
+
+    Callback cb = std::bind(&AStarPather::PreProcess, this);
+    Messenger::listen_for_message(Messages::MAP_CHANGE, cb);
 
     return true; // return false if any errors actually occur, to stop engine initialization
 }
@@ -88,6 +83,13 @@ PathResult AStarPather::compute_path(PathRequest &request)
             IMPOSSIBLE - a path from start to goal does not exist, do not add start position to path
     */
 
+    // WRITE YOUR CODE HERE
+
+    if (request.settings.method == Method::FLOYD_WARSHALL)
+    {
+        return Floyd(request);
+    }
+
     if (request.newRequest)
     {
         request.newRequest = false;
@@ -101,7 +103,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
         if (curr.IsOpen(_allNodes))
         {
-            if (curr._self == _goal)
+            if (curr._pos == goal)
             {
                 FinishRequest(request);
                 return PathResult::COMPLETE;
@@ -109,11 +111,10 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
             AddNeighboors(curr);
 
-            if (_debugColor)
-                ColorClosed(curr._self);
+            if (debug)
+                ColorClosed(curr._pos);
 
-            if(request.settings.singleStep)
-                return PathResult::PROCESSING;
+            //return PathResult::PROCESSING;
         }
     }
 
@@ -122,87 +123,45 @@ PathResult AStarPather::compute_path(PathRequest &request)
 
 void AStarPather::InitRequest(const PathRequest& request)
 {
-    grid_width = terrain->get_map_width();
     int start = GridToInt(terrain->get_grid_position(request.start));
-    _goal = GridToInt(terrain->get_grid_position(request.goal));
-    _debugColor = request.settings.debugColoring;
-    _h = request.settings.heuristic;
-    _weight = request.settings.weight;
+    goal = GridToInt(terrain->get_grid_position(request.goal));
+    debug = request.settings.debugColoring;
+    h = request.settings.heuristic;
+    weight = request.settings.weight;
 
     if (_debugColor)
         ColorInit(start);
 
-    _allNodes.clear();
+    const int size = grid_width * terrain->get_map_height();
+    _allNodes.resize(size);
+
+    for (int i = 0; i < size; ++i)
+        _allNodes[i].Reset();
+
     while (!_openList.empty())
         _openList.pop(); // The priority queue's container is a vector that has a
                          // clear method so I shouldn't have to do this in O(n). 
-    _openList.emplace(start, _goal, _weight, _h);
-    _allNodes.emplace(start, _openList.top());
+    _openList.emplace(start);
+    //_allNodes.emplace(_allNodes.cbegin() + start);
+    _allNodes[start].SetStart();
 }
 
 void AStarPather::AddNeighboors(Node& curr)
 {
-    int row = IntToRow(curr._self);
-    int col = IntToCol(curr._self);
+    int r = IntToRow(curr._pos);
+    int c = IntToCol(curr._pos);
 
-    col += 1;
-    bool right = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
-    if (right)
-        AddAdj(curr, CoordToInt(row, col));
+    NodeCore& core = _allNodes[curr._pos];
 
-    col -= 2;
-    bool left = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
-    if (left)
-        AddAdj(curr, CoordToInt(row, col));
-    col += 1;
-
-    row += 1;
-    bool up = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
-    if (up)
-        AddAdj(curr, CoordToInt(row, col));
-
-    row -= 2;
-    bool down = terrain->is_valid_grid_position(row, col) && !terrain->is_wall(row, col);
-    if (down)
-        AddAdj(curr, CoordToInt(row, col));
-    row += 1;
-
-    if (right && up)
+    for (DirectT i = 0; i < numTot; ++i)
     {
-        ++row;
-        ++col;
-        if (!terrain->is_wall(row, col))
-            AddDiag(curr, CoordToInt(row, col));
-        --row;
-        --col;
-    }
-
-    if (left && up)
-    {
-        ++row;
-        --col;
-        if (!terrain->is_wall(row, col))
-            AddDiag(curr, CoordToInt(row, col));
-        --row;
-        ++col;
-    }
-
-    if (left && down)
-    {
-        --row;
-        --col;
-        if (!terrain->is_wall(row, col))
-            AddDiag(curr, CoordToInt(row, col));
-        ++row;
-        ++col;
-    }
-
-    if (right && down)
-    {
-        --row;
-        ++col;
-        if (!terrain->is_wall(row, col))
-            AddDiag(curr, CoordToInt(row, col));
+        if (core._valid[i])
+        {
+            if(i < numEach)
+                AddCard(curr, CoordToInt(r + _r_comp[i], c + _c_comp[i]), curr._pos);
+            else
+                AddDiag(curr, CoordToInt(r + _r_comp[i], c + _c_comp[i]), curr._pos);
+        }
     }
 }
 
@@ -210,7 +169,7 @@ void AStarPather::FinishRequest(PathRequest& request)
 {
     if (request.settings.rubberBanding)
     {
-        Rubberbanding(request);
+        Rubberbanding();
 
         if (request.settings.smoothing)
         {
@@ -219,20 +178,25 @@ void AStarPather::FinishRequest(PathRequest& request)
         }
     }
 
-    do
-    {
-        request.path.push_front(terrain->get_world_position(IntToRow(_goal), IntToCol(_goal)));
-    } while ((_goal = _allNodes[_goal]._parent) >= 0);
+    MakePath(request);
 }
 
-void AStarPather::Rubberbanding(PathRequest& request)
+void AStarPather::MakePath(PathRequest& request)
 {
-    int back = _goal;
+    do
+    {
+        request.path.push_front(terrain->get_world_position(IntToRow(goal), IntToCol(goal)));
+    } while ((goal = _allNodes[goal]._parent) >= 0);
+}
+
+void AStarPather::Rubberbanding()
+{
+    int back = goal;
 
     // incase start and goal are the same node
     int mid = _allNodes[back]._parent;
     if (mid < 0)
-       return;
+        return;
 
     int front = _allNodes[mid]._parent;
 
@@ -262,38 +226,10 @@ void AStarPather::Rubberbanding(PathRequest& request)
     }
 }
 
-void AStarPather::AddBackNodes(WaypointList& path)
-{
-    float max_dist = 1.5f * terrain->mapSizeInWorld / terrain->get_map_width();
-
-    Vec3 last = terrain->get_world_position(IntToRow(_goal), IntToCol(_goal));
-    path.push_front(last);
-    _goal = _allNodes[_goal]._parent;
-
-    while(_goal >= 0)
-    {
-        Vec3 next = terrain->get_world_position(IntToRow(_goal), IntToCol(_goal));
-
-        if (Vec3::Distance(next, last) > max_dist)
-        {
-            next = (next + last) / 2;
-            while (Vec3::Distance(next, last) > max_dist)
-            {
-                next = (next + last) / 2;
-            }
-        }
-        else
-        {
-            _goal = _allNodes[_goal]._parent;
-        }
-        path.push_front(last = next);
-    }
-}
-
 void AStarPather::ColorInit(int start)
 {
     terrain->set_color(IntToRow(start), IntToCol(start), Colors::Orange);
-    terrain->set_color(IntToRow(_goal), IntToCol(_goal), Colors::Orange);
+    terrain->set_color(IntToRow(goal), IntToCol(goal), Colors::Orange);
 }
 
 void AStarPather::ColorOpen(int open)
