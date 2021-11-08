@@ -195,13 +195,6 @@ public:
             int r = IntToRow(pos);
             int c = IntToCol(pos);
 
-            bool debug = false;
-            if (r == 14 && c == 13)
-            {
-                terrain->set_color(r, c, Colors::Red);
-                debug = true;
-            }
-
             for (DirectT d = 0; d < numTot; ++d)
                 if (start._valid[d])
                 {
@@ -218,10 +211,10 @@ public:
                         open.emplace(next, sqrt2);
                 }
 
-            CalculateBounds(_terrain, log, open, debug);
+            CalculateBounds(_terrain, log, open);
         }
 
-        void CalculateBounds(VECTOR& _terrain, LOG& log, GB_QUEUE& open, bool debug)
+        void CalculateBounds(VECTOR& _terrain, LOG& log, GB_QUEUE& open)
         {
             while (!open.empty())
             {
@@ -234,9 +227,6 @@ public:
 
                 DirectT direction = log[curr];
                 boxes[direction].UpdateBounds(r, c);
-
-                if (debug && direction == 2)
-                    terrain->set_color(r, c, Colors::Yellow);
 
                 AddNeighboors(log, open, _terrain[curr], dist, r, c, direction);
             }
