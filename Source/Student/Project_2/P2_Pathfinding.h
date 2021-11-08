@@ -407,7 +407,7 @@ public:
         const int size = terrain->get_map_width() * terrain->get_map_height();
 
         PreProcessTerrain(size);
-        //PreProcessFloyd(size);
+        PreProcessFloyd(size);
         PreProcessGoalBounds(size);
     }
 
