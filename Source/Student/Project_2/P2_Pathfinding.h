@@ -113,6 +113,12 @@ public:
 
     typedef std::vector<NodeCore> VECTOR;
 
+    struct GB_Node;
+    struct BoundBox;
+    struct GoalBound;
+
+    typedef std::vector<GoalBound> BOUNDS;
+
     typedef int PosT;
 
     struct Node
@@ -158,6 +164,7 @@ public:
     QUEUE _openList;
     VECTOR _allNodes;
     std::vector<std::vector<int>> _oracle;
+    BOUNDS _goalBounds;
 
     void InitRequest(const PathRequest& request);
     void FinishRequest(PathRequest& request);
@@ -264,11 +271,27 @@ public:
     void PreProcess()
     {
         grid_width = terrain->get_map_width();
-
         const int size = terrain->get_map_width() * terrain->get_map_height();
+
+        PreProcessTerrain(size);
+        PreProcessFloyd(size);
+        PreProcessGoalBounds(size);
+    }
+
+    void PreProcessTerrain(int size)
+    {
         _allNodes.clear();
         _allNodes.reserve(size);
 
+        for (int i = 0; i < size; ++i)
+        {
+            _allNodes.emplace_back();
+            _allNodes[i].SetSurrondingTerain(i);
+        }
+    }
+
+    void PreProcessFloyd(int size)
+    {
         _oracle.clear();
         _oracle.resize(size);
 
@@ -278,9 +301,6 @@ public:
 
         for (int i = 0; i < size; ++i)
         {
-            _allNodes.emplace_back();
-            _allNodes[i].SetSurrondingTerain(i);
-
             _oracle[i].resize(size);
 
             for (int j = 0; j < size; ++j)
@@ -314,6 +334,8 @@ public:
                     }
                 }
     }
+
+    void PreProcessGoalBounds(int size);
 
     void Rubberbanding();
 
