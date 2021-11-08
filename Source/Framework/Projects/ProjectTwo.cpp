@@ -269,9 +269,13 @@ void ProjectTwo::build_ui()
     auto failureButton = ui->create_conditional_button(UIAnchor::BOTTOM, allTestsButton,
         10, failureCB, L"Next Failed Test", failureCond);
 
-    Callback speedCB = std::bind(&PathTester::execute_speed_test, &tester);
+    Callback speedCB = std::bind(&PathTester::execute_speed_test_astar, &tester);
     auto speedTestButton = ui->create_button(UIAnchor::BOTTOM, failureButton, 10,
         speedCB, L"Run Speed Test");
+
+    Callback goalspeedCB = std::bind(&PathTester::execute_speed_test_goalbounding, &tester);
+    auto goalspeedTestButton = ui->create_button(UIAnchor::BOTTOM, failureButton, 50,
+        speedCB, L"Goal Bounding Speed Test");
 
 
 

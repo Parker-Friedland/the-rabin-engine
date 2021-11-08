@@ -10,7 +10,7 @@ bool ProjectTwo::implemented_floyd_warshall()
 
 bool ProjectTwo::implemented_goal_bounding()
 {
-    return false;
+    return true;
 }
 
 bool ProjectTwo::implemented_jps_plus()

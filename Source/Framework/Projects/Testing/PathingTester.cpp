@@ -131,7 +131,17 @@ void PathTester::execute_all_tests()
     }
 }
 
-void PathTester::execute_speed_test()
+void PathTester::execute_speed_test_astar()
+{
+    execute_speed_test(Method::ASTAR);
+}
+
+void PathTester::execute_speed_test_goalbounding()
+{
+    execute_speed_test(Method::GOAL_BOUNDING);
+}
+
+void PathTester::execute_speed_test(Method method)
 {
     terrain->goto_map(1);
 
@@ -139,7 +149,7 @@ void PathTester::execute_speed_test()
     agent->set_heuristic_weight(1.01f);
     agent->set_debug_coloring(false);
     agent->set_movement_type(Movement::NONE);
-    agent->set_method_type(Method::ASTAR);
+    agent->set_method_type(method);
     agent->set_rubberbanding(false);
     agent->set_smoothing(false);
     agent->set_single_step(false);
@@ -178,7 +188,7 @@ void PathTester::execute_speed_test()
     }
 
     std::stringstream filename;
-    filename << "Output/SpeedTest_";
+    filename << (method == Method::ASTAR? "Output/SpeedTest_" : "Output/GoalTest_");
     Serialization::generate_time_stamp(filename);
     filename << ".txt";
 

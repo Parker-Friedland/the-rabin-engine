@@ -34,7 +34,9 @@ public:
 
     void execute_current_test();
     void execute_all_tests();
-    void execute_speed_test();
+    void execute_speed_test(Method method);
+    void execute_speed_test_astar();
+    void execute_speed_test_goalbounding();
 
     void tick();
 
