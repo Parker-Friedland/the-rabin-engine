@@ -16,6 +16,7 @@ written consent of DigiPen Institute of Technology is prohibited.
 
 #include "Terrain/TerrainAnalysis.h"
 #include "Agent/CameraAgent.h"
+#include "../Student/Project_2/P2_Pathfinding.h"
 
 #include "UI/Elements/Buttons/UIButton.h"
 #include "UI/Elements/Sliders/UISlider.h"
@@ -219,6 +220,11 @@ void ProjectTwo::build_ui()
     auto movementButton = ui->create_dynamic_button(UIAnchor::BOTTOM, debugButton,
         10, movementCB, movementGet);
 
+    // then a button for floyd
+    Callback floydCB = std::bind(&AStarAgent::toggle_floyd, agent);
+    Getter<bool> floydGet = std::bind(&AStarAgent::get_floyd, agent);
+    auto floydButton = ui->create_toggle_button(UIAnchor::BOTTOM, singleButton,
+        100, floydCB, L"Warshall", floydGet);
 
     // add some text on the left side for displaying fps
     TextGetter fpsGetter = std::bind(&Engine::get_fps_text, engine.get());
