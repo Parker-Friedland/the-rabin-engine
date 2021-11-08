@@ -493,7 +493,7 @@ public:
     inline void ColorOpen(int open);
     inline void ColorClosed(int closed);
 
-    void AddNeighboors(Node& curr);
+    void AddNeighboors(Node& curr, bool goalbounding);
 
     template <bool diag>
     void AddNeighboor(Node &curr, int pos, int parent)

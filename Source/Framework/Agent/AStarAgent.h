@@ -76,6 +76,9 @@ public:
     void toggle_floyd();
     bool get_floyd();
 
+    void toggle_goalbounding();
+    bool get_goalbounding();
+
     const PathRequest &get_request_data() const;
     void bulk_set_request_settings(const PathRequest::Settings &setting);
 

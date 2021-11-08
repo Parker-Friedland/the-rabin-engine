@@ -109,7 +109,7 @@ PathResult AStarPather::compute_path(PathRequest &request)
                 return PathResult::COMPLETE;
             }
 
-            AddNeighboors(curr);
+            AddNeighboors(curr, request.settings.method == Method::GOAL_BOUNDING);
 
             if (debug)
                 ColorClosed(curr._pos);
@@ -146,21 +146,22 @@ void AStarPather::InitRequest(const PathRequest& request)
     _allNodes[start].SetStart();
 }
 
-void AStarPather::AddNeighboors(Node& curr)
+void AStarPather::AddNeighboors(Node& curr, bool goalbounding)
 {
     int r = IntToRow(curr._pos);
     int c = IntToCol(curr._pos);
 
     NodeCore& core = _allNodes[curr._pos];
 
-    for (DirectT i = 0; i < numTot; ++i)
+    for (DirectT d = 0; d < numTot; ++d)
     {
-        if (core._valid[i])
+        if (core._valid[d] &&
+            (!goalbounding || _goalBounds[curr._pos].InBounds(goal, d)))
         {
-            if(i < numEach)
-                AddCard(curr, CoordToInt(r + _r_comp[i], c + _c_comp[i]), curr._pos);
+            if(d < numEach)
+                AddCard(curr, CoordToInt(r + _r_comp[d], c + _c_comp[d]), curr._pos);
             else
-                AddDiag(curr, CoordToInt(r + _r_comp[i], c + _c_comp[i]), curr._pos);
+                AddDiag(curr, CoordToInt(r + _r_comp[d], c + _c_comp[d]), curr._pos);
         }
     }
 }

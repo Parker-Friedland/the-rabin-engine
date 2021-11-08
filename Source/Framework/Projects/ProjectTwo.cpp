@@ -226,6 +226,12 @@ void ProjectTwo::build_ui()
     auto floydButton = ui->create_toggle_button(UIAnchor::BOTTOM, singleButton,
         100, floydCB, L"Warshall", floydGet);
 
+    // then a button for goalbounding
+    Callback goalboundingCB = std::bind(&AStarAgent::toggle_goalbounding, agent);
+    Getter<bool> goalboundingGet = std::bind(&AStarAgent::get_goalbounding, agent);
+    auto goalboundingButton = ui->create_toggle_button(UIAnchor::BOTTOM, singleButton,
+        200, goalboundingCB, L"Warshall", goalboundingGet);
+
     // add some text on the left side for displaying fps
     TextGetter fpsGetter = std::bind(&Engine::get_fps_text, engine.get());
     auto fpsText = ui->create_value_text_field(UIAnchor::TOP_LEFT, 90, 32, L"FPS:", fpsGetter);

@@ -321,6 +321,16 @@ bool AStarAgent::get_floyd()
     return buffer.settings.method == Method::FLOYD_WARSHALL;
 }
 
+void AStarAgent::toggle_goalbounding()
+{
+    buffer.settings.method = get_goalbounding() ? Method::ASTAR : Method::GOAL_BOUNDING;
+}
+
+bool AStarAgent::get_goalbounding()
+{
+    return buffer.settings.method == Method::GOAL_BOUNDING;
+}
+
 const PathRequest &AStarAgent::get_request_data() const
 {
     return request;
