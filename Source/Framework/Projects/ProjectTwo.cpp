@@ -230,7 +230,7 @@ void ProjectTwo::build_ui()
     Callback goalboundingCB = std::bind(&AStarAgent::toggle_goalbounding, agent);
     Getter<bool> goalboundingGet = std::bind(&AStarAgent::get_goalbounding, agent);
     auto goalboundingButton = ui->create_toggle_button(UIAnchor::BOTTOM, singleButton,
-        200, goalboundingCB, L"Warshall", goalboundingGet);
+        200, goalboundingCB, L"Goal Bounding", goalboundingGet);
 
     // add some text on the left side for displaying fps
     TextGetter fpsGetter = std::bind(&Engine::get_fps_text, engine.get());
