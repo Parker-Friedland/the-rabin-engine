@@ -113,7 +113,32 @@ public:
 
     typedef std::vector<NodeCore> VECTOR;
 
-    typedef std::priority_queue<int, std::vector<int>, std::greater<int>> GB_QUEUE;
+    struct GB_Node
+    {
+        GB_Node(int pos) : _pos(pos), _dist(1.f) {}
+
+        GB_Node(int pos, float dist) : _pos(pos), _dist(dist) {}
+
+        int _pos;
+        float _dist;
+
+        bool operator>(const GB_Node& rhs) const
+        {
+            return _dist > rhs._dist;
+        }
+
+        bool operator==(const GB_Node& rhs) const
+        {
+            return _pos == rhs._pos;
+        }
+
+        bool operator!=(const GB_Node& rhs) const
+        {
+            return _pos != rhs._pos;
+        }
+    };
+
+    typedef std::priority_queue<GB_Node, std::vector<GB_Node>, std::greater<GB_Node>> GB_QUEUE;
     typedef std::vector<AStarPather::DirectT> LOG;
 
     static constexpr DirectT unvisited = 8;
@@ -174,7 +199,7 @@ public:
                         if (d < numEach)
                             cards.emplace(next);
                         else
-                            diags.emplace(next);
+                            diags.emplace(next, sqrt2);
                     }
                 }
 
@@ -185,29 +210,31 @@ public:
         {
             while (!diags.empty() || !cards.empty())
             {
-                int curr;
+                const GB_Node* curr;
 
                 if (!diags.empty())
                 {
-                    curr = diags.top();
+                    curr = &diags.top();
                     diags.pop();
                 }
                 else
                 {
-                    curr = cards.top();
+                    curr = &cards.top();
                     cards.pop();
                 }
 
-                int r = IntToRow(curr);
-                int c = IntToCol(curr);
+                int pos = curr->_pos;
+                int r = IntToRow(pos);
+                int c = IntToCol(pos);
 
-                DirectT direction = log[curr];
+                DirectT direction = log[pos];
                 boxes[direction].UpdateBounds(r, c);
-                AddNeighboors(log, diags, cards, terrain[curr], r, c, direction);
+
+                AddNeighboors(log, diags, cards, terrain[pos], curr->_dist, r, c, direction);
             }
         }
 
-        void AddNeighboors(LOG& log, GB_QUEUE& diags, GB_QUEUE& cards, const NodeCore& terrain, int r, int c, DirectT direction)
+        void AddNeighboors(LOG& log, GB_QUEUE& diags, GB_QUEUE& cards, const NodeCore& terrain, float dist, int r, int c, DirectT direction)
         {
             for (DirectT d = 0; d < numTot; ++d)
                 if (terrain._valid[d])
@@ -217,9 +244,9 @@ public:
                     {
                         log[next] = direction;
                         if (d < numEach)
-                            cards.emplace(next);
+                            cards.emplace(next, dist + 1.f);
                         else
-                            diags.emplace(next);
+                            diags.emplace(next, dist + sqrt2);
                     }
                 }
         }
