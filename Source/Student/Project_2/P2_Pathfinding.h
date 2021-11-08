@@ -317,6 +317,34 @@ public:
 
     void Rubberbanding();
 
+    void AddBackNodes(WaypointList& path)
+    {
+        float max_dist = 1.5f * terrain->mapSizeInWorld / terrain->get_map_width();
+
+        Vec3 last = terrain->get_world_position(IntToRow(goal), IntToCol(goal));
+        path.push_front(last);
+        goal = _allNodes[goal]._parent;
+
+        while (goal >= 0)
+        {
+            Vec3 next = terrain->get_world_position(IntToRow(goal), IntToCol(goal));
+
+            if (Vec3::Distance(next, last) > max_dist)
+            {
+                next = (next + last) / 2;
+                while (Vec3::Distance(next, last) > max_dist)
+                {
+                    next = (next + last) / 2;
+                }
+            }
+            else
+            {
+                goal = _allNodes[goal]._parent;
+            }
+            path.push_front(last = next);
+        }
+    }
+
     inline void ColorInit(int start);
     inline void ColorOpen(int open);
     inline void ColorClosed(int closed);

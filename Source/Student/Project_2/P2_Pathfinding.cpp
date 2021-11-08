@@ -168,7 +168,15 @@ void AStarPather::AddNeighboors(Node& curr)
 void AStarPather::FinishRequest(PathRequest& request)
 {
     if (request.settings.rubberBanding)
+    {
         Rubberbanding();
+
+        if (request.settings.smoothing)
+        {
+            AddBackNodes(request.path);
+            return;
+        }
+    }
 
     MakePath(request);
 }
