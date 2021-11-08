@@ -175,7 +175,7 @@ public:
         {
             InitRequest(request);
             FloydCopy(start);
-            MakePath(request);
+            FinishRequest(request);
         }
         else
             MakeFloydPath(request, start);
@@ -261,47 +261,6 @@ public:
         }
     }
 
-    struct Cost
-    {
-        Cost() :
-            _c(std::numeric_limits<CountT>::max()),
-            _d(std::numeric_limits<CountT>::max())
-        {}
-
-        void SetToC()
-        {
-            _c = 1;
-            _d = 0;
-        }
-
-        void SetToD()
-        {
-            _c = 0;
-            _d = 1;
-        }
-
-        void SetTo0()
-        {
-            _c = 0;
-            _d = 0;
-        }
-
-        CountT _c;
-        CountT _d;
-
-        bool operator>(const Node& rhs) const
-        {
-            return static_cast<float>(    _c) + sqrt2 * static_cast<float>(    _d)
-                 > static_cast<float>(rhs._c) + sqrt2 * static_cast<float>(rhs._d);
-        }
-
-        bool operator<(const Node& rhs) const
-        {
-            return static_cast<float>(    _c) + sqrt2 * static_cast<float>(    _d)
-                 < static_cast<float>(rhs._c) + sqrt2 * static_cast<float>(rhs._d);
-        }
-    };
-
     void PreProcess()
     {
         grid_width = terrain->get_map_width();
@@ -313,13 +272,9 @@ public:
         _oracle.clear();
         _oracle.resize(size);
 
-        /*std::vector<std::vector<float>> path =
+        std::vector<std::vector<float>> path =
             std::vector<std::vector<float>>(size,
-                std::vector<float>(size, std::numeric_limits<float>::max()));*/
-
-        std::vector<std::vector<Cost>> path =
-            std::vector<std::vector<Cost>>(size,
-                std::vector<Cost>(size, Cost()));
+                std::vector<float>(size, std::numeric_limits<float>::max()));
 
         for (int i = 0; i < size; ++i)
         {
@@ -355,18 +310,7 @@ public:
                     if (newPath < path[i][j])
                     {
                         path[i][j] = newPath;
-                        _oracle[i][j] = k;
-                    }
-                }
-
-        for (int k = 0; k < size; ++k)
-            for (int i = 0; i < size; ++i)
-                for (int j = 0; j < size; ++j)
-                {
-                    float newPath = path[i][k] + path[k][j];
-                    if (newPath < path[i][j])
-                    {
-                        bool debug = true;
+                        _oracle[i][j] = _oracle[i][k];
                     }
                 }
     }
