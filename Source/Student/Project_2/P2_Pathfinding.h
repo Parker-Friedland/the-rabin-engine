@@ -119,8 +119,8 @@ public:
 
         GB_Node(int pos, float dist) : _pos(pos), _dist(dist) {}
 
-        int _pos;
         float _dist;
+        int _pos;
 
         bool operator>(const GB_Node& rhs) const
         {
@@ -147,13 +147,10 @@ public:
     {
         int r1, r2, c1, c2;
 
-        bool InBounds(int pos)
+        void InitBounds(int r, int c)
         {
-            int r = IntToRow(pos);
-            int c = IntToCol(pos);
-
-            return r >= r1 && r <= r2
-                && c >= c1 && c <= c2;
+            r1 = r2 = r;
+            c1 = c2 = c;
         }
 
         void UpdateBounds(int r, int c)
@@ -168,6 +165,15 @@ public:
             if (c > c2)
                 c2 = c;
         }
+
+        bool InBounds(int pos)
+        {
+            int r = IntToRow(pos);
+            int c = IntToCol(pos);
+
+            return r >= r1 && r <= r2
+                && c >= c1 && c <= c2;
+        }
     };
 
     struct GoalBound
@@ -179,62 +185,64 @@ public:
             return boxes[d].InBounds(pos);
         }
 
-        GoalBound(VECTOR& terrain, LOG& log, GB_QUEUE& diags, GB_QUEUE& cards, int pos)
+        GoalBound(VECTOR& _terrain, LOG& log, GB_QUEUE& open, int pos)
         {
             for (auto i = log.begin(); i < log.end(); ++i)
                 *i = unvisited;
 
-            auto start = terrain[pos];
+            auto start = _terrain[pos];
 
             int r = IntToRow(pos);
             int c = IntToCol(pos);
 
+            bool debug = false;
+            if (r == 14 && c == 13)
+            {
+                terrain->set_color(r, c, Colors::Red);
+                debug = true;
+            }
+
             for (DirectT d = 0; d < numTot; ++d)
                 if (start._valid[d])
                 {
-                    int next = CoordToInt(r + _r_comp[d], c + _c_comp[d]);
-                    if (log[next] == unvisited)
-                    {
-                        log[next] = d;
-                        if (d < numEach)
-                            cards.emplace(next);
-                        else
-                            diags.emplace(next, sqrt2);
-                    }
+                    int new_r = r + _r_comp[d];
+                    int new_c = c + _c_comp[d];
+
+                    boxes[d].InitBounds(r, c);
+                    int next = CoordToInt(new_r, new_c);
+                    log[next] = d;
+
+                    if (d < numEach)
+                        open.emplace(next);
+                    else
+                        open.emplace(next, sqrt2);
                 }
 
-            CalculateBounds(terrain, log, diags, cards);
+            CalculateBounds(_terrain, log, open, debug);
         }
 
-        void CalculateBounds(VECTOR& terrain, LOG& log, GB_QUEUE& diags, GB_QUEUE& cards)
+        void CalculateBounds(VECTOR& _terrain, LOG& log, GB_QUEUE& open, bool debug)
         {
-            while (!diags.empty() || !cards.empty())
+            while (!open.empty())
             {
-                const GB_Node* curr;
+                int curr = open.top()._pos;
+                float dist = open.top()._dist;
+                open.pop();
 
-                if (!diags.empty())
-                {
-                    curr = &diags.top();
-                    diags.pop();
-                }
-                else
-                {
-                    curr = &cards.top();
-                    cards.pop();
-                }
+                int r = IntToRow(curr);
+                int c = IntToCol(curr);
 
-                int pos = curr->_pos;
-                int r = IntToRow(pos);
-                int c = IntToCol(pos);
-
-                DirectT direction = log[pos];
+                DirectT direction = log[curr];
                 boxes[direction].UpdateBounds(r, c);
 
-                AddNeighboors(log, diags, cards, terrain[pos], curr->_dist, r, c, direction);
+                if (debug && direction == 2)
+                    terrain->set_color(r, c, Colors::Yellow);
+
+                AddNeighboors(log, open, _terrain[curr], dist, r, c, direction);
             }
         }
 
-        void AddNeighboors(LOG& log, GB_QUEUE& diags, GB_QUEUE& cards, const NodeCore& terrain, float dist, int r, int c, DirectT direction)
+        void AddNeighboors(LOG& log, GB_QUEUE& open, const NodeCore& terrain, float dist, int r, int c, DirectT direction)
         {
             for (DirectT d = 0; d < numTot; ++d)
                 if (terrain._valid[d])
@@ -244,9 +252,9 @@ public:
                     {
                         log[next] = direction;
                         if (d < numEach)
-                            cards.emplace(next, dist + 1.f);
+                            open.emplace(next, dist + 1.f);
                         else
-                            diags.emplace(next, dist + sqrt2);
+                            open.emplace(next, dist + sqrt2);
                     }
                 }
         }
@@ -409,7 +417,7 @@ public:
         const int size = terrain->get_map_width() * terrain->get_map_height();
 
         PreProcessTerrain(size);
-        PreProcessFloyd(size);
+        //PreProcessFloyd(size);
         PreProcessGoalBounds(size);
     }
 
@@ -472,8 +480,7 @@ public:
 
     void PreProcessGoalBounds(int size)
     {
-        GB_QUEUE diags = GB_QUEUE();
-        GB_QUEUE cards = GB_QUEUE();
+        GB_QUEUE open = GB_QUEUE();
         LOG log = LOG();
         log.resize(size);
 
@@ -482,7 +489,7 @@ public:
 
         for (int i = 0; i < size; ++i)
         {
-            _goalBounds.emplace_back(_allNodes, log, diags, cards, i);
+            _goalBounds.emplace_back(_allNodes, log, open, i);
         }
     }
 
