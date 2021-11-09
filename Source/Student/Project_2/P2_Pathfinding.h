@@ -115,11 +115,15 @@ public:
 
     struct GB_Node
     {
-        GB_Node(int pos) : _pos(pos), _dist(1.f) {}
+        GB_Node(int pos) : _pos(pos), _dist(1.f), _c(1), _d(0) {}
 
-        GB_Node(int pos, float dist) : _pos(pos), _dist(dist) {}
+        GB_Node(int pos, float dist) : _pos(pos), _dist(dist), _c(0), _d(1) {}
+
+        GB_Node(int pos, float dist, int c, int d) : _pos(pos), _dist(dist), _c(c), _d(d) {}
 
         float _dist;
+        int _c;
+        int _d;
         int _pos;
 
         bool operator>(const GB_Node& rhs) const
@@ -195,6 +199,13 @@ public:
             int r = IntToRow(pos);
             int c = IntToCol(pos);
 
+            bool debug = false;
+            if (r == 11 && c == 4)
+            {
+                terrain->set_color(r, c, Colors::Red);
+                debug = true;
+            }
+
             for (DirectT d = 0; d < numTot; ++d)
                 if (start._valid[d])
                 {
@@ -211,28 +222,43 @@ public:
                         open.emplace(next, sqrt2);
                 }
 
-            CalculateBounds(_terrain, log, open);
+            CalculateBounds(_terrain, log, open, debug);
         }
 
-        void CalculateBounds(VECTOR& _terrain, LOG& log, GB_QUEUE& open)
+        void CalculateBounds(VECTOR& _terrain, LOG& log, GB_QUEUE& open, bool debug)
         {
             while (!open.empty())
             {
                 int curr = open.top()._pos;
+                int car = open.top()._c;
+                int diag = open.top()._d;
                 float dist = open.top()._dist;
                 open.pop();
 
                 int r = IntToRow(curr);
                 int c = IntToCol(curr);
+                
+                if (debug)
+                {
+                    if ((r == 37 && (c == 0 || c == 1))
+                        || (r == 31 && (c == 2 || c == 3)))
+                        bool wat = true;
+                }
 
                 DirectT direction = log[curr];
                 boxes[direction].UpdateBounds(r, c);
 
-                AddNeighboors(log, open, _terrain[curr], dist, r, c, direction);
+                if (debug && direction == 1)
+                    terrain->set_color(r, c, Colors::Yellow);
+
+                if (debug && direction == 0)
+                    terrain->set_color(r, c, Colors::Cyan);
+
+                AddNeighboors(log, open, _terrain[curr], dist, r, c, direction, car, diag);
             }
         }
 
-        void AddNeighboors(LOG& log, GB_QUEUE& open, const NodeCore& terrain, float dist, int r, int c, DirectT direction)
+        void AddNeighboors(LOG& log, GB_QUEUE& open, const NodeCore& terrain, float dist, int r, int c, DirectT direction, int car, int diag)
         {
             for (DirectT d = 0; d < numTot; ++d)
                 if (terrain._valid[d])
@@ -242,9 +268,9 @@ public:
                     {
                         log[next] = direction;
                         if (d < numEach)
-                            open.emplace(next, dist + 1.f);
+                            open.emplace(next, dist + 1.f, car + 1, diag);
                         else
-                            open.emplace(next, dist + sqrt2);
+                            open.emplace(next, dist + sqrt2, car, diag + 1);
                     }
                 }
         }
@@ -407,7 +433,7 @@ public:
         const int size = terrain->get_map_width() * terrain->get_map_height();
 
         PreProcessTerrain(size);
-        PreProcessFloyd(size);
+        //PreProcessFloyd(size);
         PreProcessGoalBounds(size);
     }
 
