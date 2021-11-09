@@ -115,19 +115,22 @@ public:
 
     struct GB_Node
     {
-        GB_Node(int pos) : _pos(pos), _dist(1.f) {}
+        GB_Node(int pos, DirectT direction) 
+            : _pos(pos), _d(direction), _dist(1.f) {}
 
-        GB_Node(int pos, float dist) : _pos(pos), _dist(dist) {}
+        GB_Node(int pos, DirectT direction, float dist) 
+            : _pos(pos), _d(direction), _dist(dist) {}
 
         float _dist;
         int _pos;
+        DirectT _d;
 
         bool operator>(const GB_Node& rhs) const
         {
             return _dist > rhs._dist;
         }
 
-        bool operator==(const GB_Node& rhs) const
+        /*bool operator==(const GB_Node& rhs) const
         {
             return _pos == rhs._pos;
         }
@@ -135,13 +138,8 @@ public:
         bool operator!=(const GB_Node& rhs) const
         {
             return _pos != rhs._pos;
-        }
+        }*/
     };
-
-    typedef std::priority_queue<GB_Node, std::vector<GB_Node>, std::greater<GB_Node>> GB_QUEUE;
-    typedef std::vector<AStarPather::DirectT> LOG;
-
-    static constexpr DirectT unvisited = 8;
 
     struct BoundBox
     {
@@ -176,6 +174,12 @@ public:
         }
     };
 
+    typedef std::priority_queue<GB_Node, std::vector<GB_Node>, std::greater<GB_Node>> GB_QUEUE;
+    typedef std::vector<bool> LOG;
+
+    static constexpr DirectT unvisited = 0;
+    static constexpr DirectT visited = 8;
+
     struct GoalBound
     {
         BoundBox boxes[numTot];
@@ -188,7 +192,8 @@ public:
         GoalBound(VECTOR& _terrain, LOG& log, GB_QUEUE& open, int pos)
         {
             for (auto i = log.begin(); i < log.end(); ++i)
-                *i = unvisited;
+                *i = false;
+            log[pos] = true;
 
             auto start = _terrain[pos];
 
@@ -203,12 +208,11 @@ public:
 
                     boxes[d].InitBounds(r, c);
                     int next = CoordToInt(new_r, new_c);
-                    log[next] = d;
 
                     if (d < numEach)
-                        open.emplace(next);
+                        open.emplace(next, d);
                     else
-                        open.emplace(next, sqrt2);
+                        open.emplace(next, d, sqrt2);
                 }
 
             CalculateBounds(_terrain, log, open);
@@ -218,16 +222,22 @@ public:
         {
             while (!open.empty())
             {
-                int curr = open.top()._pos;
-                float dist = open.top()._dist;
-                open.pop();
+                const int curr = open.top()._pos;
+                if (log[curr])
+                {
+                    open.pop();
+                    continue;
+                }
+                log[curr] = true;
 
-                int r = IntToRow(curr);
-                int c = IntToCol(curr);
+                const DirectT direction = open.top()._d;
+                const float dist = open.top()._dist;
 
-                DirectT direction = log[curr];
+                const int r = IntToRow(curr);
+                const int c = IntToCol(curr);
                 boxes[direction].UpdateBounds(r, c);
 
+                open.pop();
                 AddNeighboors(log, open, _terrain[curr], dist, r, c, direction);
             }
         }
@@ -237,14 +247,13 @@ public:
             for (DirectT d = 0; d < numTot; ++d)
                 if (terrain._valid[d])
                 {
-                    int next = CoordToInt(r + _r_comp[d], c + _c_comp[d]);
-                    if (log[next] == unvisited)
+                    const int next = CoordToInt(r + _r_comp[d], c + _c_comp[d]);
+                    if (!log[next])
                     {
-                        log[next] = direction;
                         if (d < numEach)
-                            open.emplace(next, dist + 1.f);
+                            open.emplace(next, direction, dist + 1.f);
                         else
-                            open.emplace(next, dist + sqrt2);
+                            open.emplace(next, direction, dist + sqrt2);
                     }
                 }
         }
